@@ -32,16 +32,26 @@ class OrderHistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final orders = context.watch<OrderProvider>().orders;
 
-    final body = orders.isEmpty
-        ? const EmptyStateWidget(
-            icon: Icons.receipt_long_outlined,
-            title: 'No past orders yet',
-            description: 'You haven\'t placed any orders yet. Start exploring our fresh catalog to place your first order!',
-          )
-        : ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: orders.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 14),
+    final body = RefreshIndicator(
+      onRefresh: () => context.read<OrderProvider>().fetchOrders(),
+      color: AppColors.primary,
+      child: orders.isEmpty
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                SizedBox(height: 120),
+                EmptyStateWidget(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'No past orders yet',
+                  description: 'You haven\'t placed any orders yet. Start exploring our fresh catalog to place your first order!',
+                ),
+              ],
+            )
+          : ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              itemCount: orders.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 14),
             itemBuilder: (_, i) {
               final order = orders[i];
               final statusColor = _getStatusColor(order.status);
@@ -183,7 +193,8 @@ class OrderHistoryScreen extends StatelessWidget {
                 ),
               );
             },
-          );
+          ),
+    );
 
     if (embedded) {
       return Column(

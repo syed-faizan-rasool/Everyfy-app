@@ -4,7 +4,7 @@ import '../../providers/admin_provider.dart';
 import '../../providers/app_role_provider.dart';
 import '../home/home_screen.dart';
 import '../delivery/rider_main_navigation_screen.dart';
-import '../role_selection_screen.dart';
+import '../auth/unified_auth_screen.dart';
 import 'admin_categories_screen.dart';
 import 'admin_coupons_screen.dart';
 
@@ -268,7 +268,7 @@ class AdminSettingsScreen extends StatelessWidget {
                   context.read<AppRoleProvider>().resetRole();
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
+                    MaterialPageRoute(builder: (_) => const UnifiedAuthScreen(initialRole: AppRole.admin)),
                     (route) => false,
                   );
                 },

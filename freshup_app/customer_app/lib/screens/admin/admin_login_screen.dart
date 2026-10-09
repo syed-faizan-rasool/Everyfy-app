@@ -13,7 +13,7 @@ class AdminLoginScreen extends StatefulWidget {
 }
 
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
-  final _emailController = TextEditingController(text: 'manager@freshcart.pk');
+  final _emailController = TextEditingController(text: 'admin@everyfy.net');
   final _passwordController = TextEditingController(text: 'admin123');
   bool _obscurePassword = true;
   bool _isLoading = false;
@@ -55,7 +55,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   }
 
   void _quickDemoLogin() {
-    _emailController.text = 'manager@freshcart.pk';
+    _emailController.text = 'admin@everyfy.net';
     _passwordController.text = 'admin123';
     _handleLogin();
   }
@@ -161,7 +161,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       keyboardType: TextInputType.emailAddress,
                       style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                       decoration: InputDecoration(
-                        hintText: 'admin@freshcart.pk',
+                        hintText: 'admin@everyfy.net',
                         prefixIcon: const Icon(Icons.mail_outline_rounded, color: Color(0xFF64748B), size: 20),
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),

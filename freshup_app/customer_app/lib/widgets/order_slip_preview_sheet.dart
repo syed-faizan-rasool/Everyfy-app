@@ -408,7 +408,7 @@ class OrderSlipPreviewSheet extends StatelessWidget {
                       const SizedBox(height: 10),
                       const Center(
                         child: Text(
-                          'Thank you for delivering with FreshCart!',
+                          'Thank you for delivering with Everyfy!',
                           style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)),
                         ),
                       ),

@@ -429,7 +429,7 @@ class OrderReceiptService {
                 child: pw.Column(
                   children: [
                     pw.Text(
-                      'Thank you for delivering with FreshCart!',
+                      'Thank you for delivering with Everyfy!',
                       style: pw.TextStyle(font: fontBold, fontSize: 7.5, color: darkText),
                     ),
                     pw.Text(

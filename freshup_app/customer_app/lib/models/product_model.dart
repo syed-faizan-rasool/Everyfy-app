@@ -24,6 +24,7 @@ class ProductModel {
   double get finalPrice => discountPrice ?? price;
   bool get hasDiscount => discountPrice != null && discountPrice! < price;
   bool get inStock => stockQty > 0;
+  bool get isFeatured => hasDiscount;
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
@@ -39,5 +40,19 @@ class ProductModel {
       unit: json['unit'] ?? '',
       stockQty: json['stock_qty'] ?? 0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'category_id': categoryId,
+      'name': name,
+      'description': description,
+      'image': image,
+      'price': price,
+      'discount_price': discountPrice,
+      'unit': unit,
+      'stock_qty': stockQty,
+    };
   }
 }

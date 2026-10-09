@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_role_provider.dart';
+import '../providers/auth_provider.dart';
 import '../utils/app_colors.dart';
-import 'role_selection_screen.dart';
+import 'admin/admin_main_navigation_screen.dart';
+import 'auth/unified_auth_screen.dart';
+import 'delivery/rider_main_navigation_screen.dart';
+import 'home/home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -9,7 +15,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -22,14 +29,16 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       duration: const Duration(milliseconds: 1200),
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.7, curve: Curves.easeIn)),
+      CurvedAnimation(
+          parent: _controller,
+          curve: const Interval(0.0, 0.7, curve: Curves.easeIn)),
     );
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
     );
 
     _controller.forward();
-    Future.delayed(const Duration(milliseconds: 2200), _navigate);
+    Future.delayed(const Duration(milliseconds: 2000), _navigate);
   }
 
   @override
@@ -40,12 +49,32 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   void _navigate() {
     if (!mounted) return;
+    final auth = context.read<AuthProvider>();
+
+    Widget target;
+    if (auth.isLoggedIn) {
+      switch (auth.role) {
+        case AppRole.admin:
+          target = const AdminMainNavigationScreen();
+          break;
+        case AppRole.rider:
+          target = const RiderMainNavigationScreen();
+          break;
+        case AppRole.customer:
+          target = const HomeScreen();
+          break;
+      }
+    } else {
+      target = const UnifiedAuthScreen();
+    }
+
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 600),
-        pageBuilder: (_, __, ___) => const RoleSelectionScreen(),
-        transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
+        transitionDuration: const Duration(milliseconds: 500),
+        pageBuilder: (_, __, ___) => target,
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
       ),
     );
   }
@@ -108,56 +137,50 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              width: 104,
-                              height: 104,
+                              width: 110,
+                              height: 110,
                               decoration: BoxDecoration(
-                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(28),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.18),
+                                    color: Colors.black.withValues(alpha: 0.25),
                                     blurRadius: 24,
                                     offset: const Offset(0, 10),
                                   ),
                                 ],
                               ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.shopping_basket_rounded,
-                                  size: 58,
-                                  color: AppColors.primary,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(28),
+                                child: Image.asset(
+                                  'assets/images/app_logo.png',
+                                  width: 110,
+                                  height: 110,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: Colors.white,
+                                    child: const Center(
+                                      child: Icon(Icons.shopping_basket_rounded, size: 60, color: AppColors.primary),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 24),
-                            const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Fresh',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                                Text(
-                                  'Cart',
-                                  style: TextStyle(
-                                    color: AppColors.accent,
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(height: 22),
+                            const Text(
+                              'Everyfy',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 36,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.5,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 6),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.12),
+                                color: Colors.white.withValues(alpha: 0.14),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: const Text(
@@ -165,7 +188,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
                                   letterSpacing: 0.2,
                                 ),
                               ),
@@ -189,7 +212,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.8)),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          Colors.white.withValues(alpha: 0.8)),
                     ),
                   ),
                 ),

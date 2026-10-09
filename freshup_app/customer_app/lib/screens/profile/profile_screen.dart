@@ -6,8 +6,8 @@ import '../../utils/app_colors.dart';
 import '../../widgets/animated_widgets.dart';
 import '../address/address_screen.dart';
 import '../admin/admin_login_screen.dart';
+import '../auth/unified_auth_screen.dart';
 import '../delivery/login_screen.dart';
-import '../role_selection_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final bool embedded;
@@ -32,7 +32,7 @@ class ProfileScreen extends StatelessWidget {
               context.read<AuthProvider>().logout();
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
+                MaterialPageRoute(builder: (_) => const UnifiedAuthScreen()),
                 (r) => false,
               );
             },
@@ -253,7 +253,7 @@ class ProfileScreen extends StatelessWidget {
                 label: 'Help & Customer Support',
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Support available 24/7 at support@freshcart.com')),
+                    const SnackBar(content: Text('Support available 24/7 at support@everyfy.net')),
                   );
                 },
               ),
@@ -293,7 +293,7 @@ class ProfileScreen extends StatelessWidget {
                 Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
                 SizedBox(width: 8),
                 Text(
-                  'Log Out of FreshCart',
+                  'Log Out of Everyfy',
                   style: TextStyle(
                     color: AppColors.error,
                     fontWeight: FontWeight.w700,

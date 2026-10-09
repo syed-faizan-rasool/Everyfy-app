@@ -4,6 +4,7 @@ import '../../data/dummy_data.dart';
 import '../../models/product_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/catalog_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/animated_widgets.dart';
 import '../../widgets/category_chip.dart';
@@ -123,12 +124,11 @@ class _HomeTabState extends State<_HomeTab> {
   }
 
   Future<void> _handleRefresh() async {
-    // Simulated pull to refresh
-    await Future.delayed(const Duration(milliseconds: 900));
+    await context.read<CatalogProvider>().fetchCatalog();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Catalog refreshed with fresh stock!'),
+        content: const Text('Catalog synced live from Everyfy Cloud!'),
         backgroundColor: AppColors.primary,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
@@ -148,11 +148,16 @@ class _HomeTabState extends State<_HomeTab> {
   @override
   Widget build(BuildContext context) {
     final address = context.watch<AuthProvider>().selectedAddress;
+    final catalog = context.watch<CatalogProvider>();
 
-    // Filter products based on search query and optional selected category
-    List<ProductModel> displayedProducts = DummyData.products;
+    // Live products from CatalogProvider
+    List<ProductModel> displayedProducts = catalog.products;
     if (_searchQuery.isNotEmpty) {
-      displayedProducts = DummyData.searchProducts(_searchQuery);
+      final q = _searchQuery.toLowerCase().trim();
+      displayedProducts = displayedProducts.where((p) =>
+          p.name.toLowerCase().contains(q) ||
+          p.description.toLowerCase().contains(q) ||
+          p.unit.toLowerCase().contains(q)).toList();
     }
     if (_selectedCategoryFilter != null) {
       displayedProducts = displayedProducts
@@ -417,10 +422,11 @@ class _HomeTabState extends State<_HomeTab> {
                 subtitle: 'Fresh and farm handpicked',
                 actionText: 'See All',
                 onAction: () {
+                  final allCats = catalog.categories.isNotEmpty ? catalog.categories : DummyData.categories;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ProductListScreen(category: DummyData.categories.first),
+                      builder: (_) => ProductListScreen(category: allCats.first),
                     ),
                   );
                 },
@@ -434,10 +440,10 @@ class _HomeTabState extends State<_HomeTab> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: DummyData.categories.length,
+                  itemCount: catalog.categories.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 12),
                   itemBuilder: (_, i) {
-                    final cat = DummyData.categories[i];
+                    final cat = catalog.categories[i];
                     return CategoryChip(
                       category: cat,
                       onTap: () => Navigator.push(

@@ -360,7 +360,7 @@ class RiderHomeScreen extends StatelessWidget {
                   child: EmptyStateWidget(
                     icon: Icons.moped_rounded,
                     title: 'No delivery requests right now',
-                    description: 'You\'re all caught up! New orders from FreshCart hub will appear here automatically.',
+                    description: 'You\'re all caught up! New orders from Everyfy hub will appear here automatically.',
                   ),
                 ),
               )

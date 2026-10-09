@@ -12,7 +12,7 @@ class DummyDeliveryData {
         customerName: 'Fatima Zahra',
         customerPhone: '03004455667',
         address: 'House 42, Street 6, Sector Y, Phase 3, DHA, Lahore',
-        storeAddress: 'FreshCart Hub · Main Boulevard, Gulberg III, Lahore',
+        storeAddress: 'Everyfy Hub · Main Boulevard, Gulberg III, Lahore',
         items: [
           CartItemModel(product: DummyData.products[0], quantity: 2), // Apples
           CartItemModel(product: DummyData.products[4], quantity: 3), // Milk
@@ -35,7 +35,7 @@ class DummyDeliveryData {
         customerName: 'Ali Raza',
         customerPhone: '03217891234',
         address: 'Apartment 4B, Gulberg Heights, Block G, Gulberg II, Lahore',
-        storeAddress: 'FreshCart Hub · Main Boulevard, Gulberg III, Lahore',
+        storeAddress: 'Everyfy Hub · Main Boulevard, Gulberg III, Lahore',
         items: [
           CartItemModel(product: DummyData.products[1], quantity: 2), // Bananas
           CartItemModel(product: DummyData.products[2], quantity: 1), // Tomatoes
@@ -58,7 +58,7 @@ class DummyDeliveryData {
         customerName: 'Usman Tariq',
         customerPhone: '03339012345',
         address: 'Villa 18, Block B, Model Town, Lahore',
-        storeAddress: 'FreshCart Hub · Main Boulevard, Gulberg III, Lahore',
+        storeAddress: 'Everyfy Hub · Main Boulevard, Gulberg III, Lahore',
         items: [
           CartItemModel(product: DummyData.products[5], quantity: 2), // Cheese
           CartItemModel(product: DummyData.products[4], quantity: 2), // Milk
@@ -81,7 +81,7 @@ class DummyDeliveryData {
         customerName: 'Ayesha Malik',
         customerPhone: '03124567890',
         address: 'House 88, Lane 4, Cavalry Ground, Cantt, Lahore',
-        storeAddress: 'FreshCart Hub · Main Boulevard, Gulberg III, Lahore',
+        storeAddress: 'Everyfy Hub · Main Boulevard, Gulberg III, Lahore',
         items: [
           CartItemModel(product: DummyData.products[0], quantity: 1), // Apples
           CartItemModel(product: DummyData.products[3], quantity: 2), // Potatoes
@@ -109,7 +109,7 @@ class DummyDeliveryData {
         customerName: 'Zainab Bibi',
         customerPhone: '03021122334',
         address: 'House 14, Main Canal Bank Road, Lahore',
-        storeAddress: 'FreshCart Hub · Main Boulevard, Gulberg III, Lahore',
+        storeAddress: 'Everyfy Hub · Main Boulevard, Gulberg III, Lahore',
         items: [
           CartItemModel(product: DummyData.products[4], quantity: 4), // Milk
           CartItemModel(product: DummyData.products[6], quantity: 2), // Bread
@@ -130,7 +130,7 @@ class DummyDeliveryData {
         customerName: 'Bilal Hassan',
         customerPhone: '03456677889',
         address: 'Plaza 12, Civic Center, Johar Town, Lahore',
-        storeAddress: 'FreshCart Hub · Main Boulevard, Gulberg III, Lahore',
+        storeAddress: 'Everyfy Hub · Main Boulevard, Gulberg III, Lahore',
         items: [
           CartItemModel(product: DummyData.products[0], quantity: 3), // Apples
           CartItemModel(product: DummyData.products[5], quantity: 1), // Cheese
@@ -151,7 +151,7 @@ class DummyDeliveryData {
         customerName: 'Hina Qureshi',
         customerPhone: '03225566778',
         address: 'Street 9, Sector K, Phase 5, DHA, Lahore',
-        storeAddress: 'FreshCart Hub · Main Boulevard, Gulberg III, Lahore',
+        storeAddress: 'Everyfy Hub · Main Boulevard, Gulberg III, Lahore',
         items: [
           CartItemModel(product: DummyData.products[1], quantity: 3), // Bananas
           CartItemModel(product: DummyData.products[7], quantity: 3), // Juice

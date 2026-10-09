@@ -30,7 +30,7 @@ class DeliveryOrderModel {
     required this.customerName,
     required this.customerPhone,
     required this.address,
-    this.storeAddress = 'FreshCart Hub · Main Boulevard, Gulberg III, Lahore',
+    this.storeAddress = 'Everyfy Hub · Main Boulevard, Gulberg III, Lahore',
     required this.items,
     required this.subtotal,
     required this.deliveryFee,
@@ -81,6 +81,59 @@ class DeliveryOrderModel {
       status: status ?? this.status,
       isAvailable: isAvailable ?? this.isAvailable,
       notes: notes ?? this.notes,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'order_number': orderNumber,
+      'customer_name': customerName,
+      'customer_phone': customerPhone,
+      'address': address,
+      'store_address': storeAddress,
+      'items': items.map((i) => i.toJson()).toList(),
+      'subtotal': subtotal,
+      'delivery_fee': deliveryFee,
+      'total': total,
+      'payment_method': paymentMethod,
+      'distance_km': distanceKm,
+      'earning': earning,
+      'created_at': createdAt.toIso8601String(),
+      'status': status.name,
+      'is_available': isAvailable,
+      'notes': notes,
+    };
+  }
+
+  factory DeliveryOrderModel.fromJson(Map<String, dynamic> json) {
+    List<CartItemModel> orderItems = [];
+    if (json['items'] is List) {
+      orderItems = (json['items'] as List)
+          .map((i) => CartItemModel.fromJson(Map<String, dynamic>.from(i)))
+          .toList();
+    }
+
+    return DeliveryOrderModel(
+      id: (json['id'] ?? '').toString(),
+      orderNumber: json['order_number'] ?? json['orderNumber'] ?? '',
+      customerName: json['customer_name'] ?? json['customerName'] ?? 'Customer',
+      customerPhone: json['customer_phone'] ?? json['customerPhone'] ?? '',
+      address: json['address'] ?? json['address_text'] ?? '',
+      storeAddress: json['store_address'] ?? 'Everyfy Hub · Main Boulevard, Gulberg III, Lahore',
+      items: orderItems,
+      subtotal: double.tryParse((json['subtotal'] ?? 0).toString()) ?? 0.0,
+      deliveryFee: double.tryParse((json['delivery_fee'] ?? json['deliveryFee'] ?? 0).toString()) ?? 0.0,
+      total: double.tryParse((json['total'] ?? json['total_amount'] ?? 0).toString()) ?? 0.0,
+      paymentMethod: json['payment_method'] ?? 'cod',
+      distanceKm: double.tryParse((json['distance_km'] ?? json['distanceKm'] ?? 3.0).toString()) ?? 3.0,
+      earning: double.tryParse((json['earning'] ?? json['rider_earning'] ?? 120.0).toString()) ?? 120.0,
+      createdAt: json['created_at'] != null
+          ? (DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now())
+          : DateTime.now(),
+      status: OrderModel.parseStatus(json['status'] ?? json['order_status']),
+      isAvailable: json['is_available'] == 1 || json['is_available'] == true || json['isAvailable'] == true,
+      notes: json['notes'] ?? 'Leave package at front gate',
     );
   }
 }

@@ -91,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // Title & Subtitle
               const Text(
-                'Welcome to FreshCart',
+                'Welcome to Everyfy',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
+import '../../services/api_service.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/animated_widgets.dart';
 import '../address/address_screen.dart';
@@ -32,10 +33,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 
-  void _applyCoupon([String? codeToApply]) {
+  Future<void> _applyCoupon([String? codeToApply]) async {
     final code = (codeToApply ?? _couponController.text).trim().toUpperCase();
-    // TODO: replace with real POST /coupons/apply call
-    if (code == 'FRESH20') {
+    if (code.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a coupon code')),
+      );
+      return;
+    }
+
+    final cart = context.read<CartProvider>();
+    final res = await ApiService.applyCoupon(code, cart.subtotal);
+    if (!mounted) return;
+
+    if (res['success'] == true && res['data'] != null) {
+      final d = double.tryParse((res['data']['discount'] ?? 0).toString()) ?? 50.0;
+      setState(() {
+        _discount = d;
+        _appliedCouponCode = code;
+        _couponController.text = code;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🎉 Coupon $code applied! Rs ${d.toStringAsFixed(0)} discount added.'),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    } else if (code == 'FRESH20') {
+      // Local fallback
       setState(() {
         _discount = 50;
         _appliedCouponCode = 'FRESH20';
@@ -49,14 +76,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
-    } else if (code.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a coupon code')),
-      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Invalid coupon code. Try FRESH20'),
+          content: Text(res['message']?.toString() ?? 'Invalid coupon code. Try FRESH20'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -429,82 +452,58 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
         child: SafeArea(
           top: false,
-          child: BouncingButton(
-            onTap: () {
-              if (_deliveryType == DeliveryType.delivery && auth.selectedAddress == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Please select a delivery address first')),
-                );
-                return;
-              }
-
-              final order = context.read<OrderProvider>().placeOrder(
-                    items: cart.items,
-                    subtotal: cart.subtotal,
-                    deliveryFee: deliveryFee,
-                    discount: _discount,
-                    paymentMethod: _paymentMethod,
-                    addressText: _deliveryType == DeliveryType.pickup
-                        ? 'Pickup from FreshCart Hub, Main Boulevard, Lahore'
-                        : (auth.selectedAddress != null
-                            ? '${auth.selectedAddress!.addressLine}, ${auth.selectedAddress!.area}, ${auth.selectedAddress!.city}'
-                            : 'Address'),
-                  );
-
-              cart.clearCart();
-
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => OrderSuccessScreen(order: order)),
-                (route) => route.isFirst,
-              );
-            },
-            child: SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () {
-                  if (_deliveryType == DeliveryType.delivery && auth.selectedAddress == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please select a delivery address first')),
-                    );
-                    return;
-                  }
-
-                  final order = context.read<OrderProvider>().placeOrder(
-                        items: cart.items,
-                        subtotal: cart.subtotal,
-                        deliveryFee: deliveryFee,
-                        discount: _discount,
-                        paymentMethod: _paymentMethod,
-                        addressText: _deliveryType == DeliveryType.pickup
-                            ? 'Pickup from FreshCart Hub, Main Boulevard, Lahore'
-                            : (auth.selectedAddress != null
-                                ? '${auth.selectedAddress!.addressLine}, ${auth.selectedAddress!.area}, ${auth.selectedAddress!.city}'
-                                : 'Address'),
-                      );
-
-                  cart.clearCart();
-
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => OrderSuccessScreen(order: order)),
-                    (route) => route.isFirst,
-                  );
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Place Order · Rs ${total.toStringAsFixed(0)}'),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.check_circle_outline_rounded, size: 20),
-                  ],
-                ),
+          child: SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: () => _submitOrder(cart, auth, deliveryFee),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Place Order · Rs ${total.toStringAsFixed(0)}'),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.check_circle_outline_rounded, size: 20),
+                ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  void _submitOrder(CartProvider cart, AuthProvider auth, double deliveryFee) {
+    if (_deliveryType == DeliveryType.delivery && auth.selectedAddress == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a delivery address first')),
+      );
+      return;
+    }
+
+    final addressText = _deliveryType == DeliveryType.pickup
+        ? 'Pickup from Everyfy Hub, Main Boulevard, Lahore'
+        : (auth.selectedAddress != null
+            ? '${auth.selectedAddress!.addressLine}, ${auth.selectedAddress!.area}, ${auth.selectedAddress!.city}'
+            : 'Address');
+
+    final order = context.read<OrderProvider>().placeOrder(
+          items: cart.items,
+          subtotal: cart.subtotal,
+          deliveryFee: deliveryFee,
+          discount: _discount,
+          paymentMethod: _paymentMethod,
+          addressText: addressText,
+          orderType: _deliveryType == DeliveryType.pickup ? 'pickup' : 'delivery',
+          notes: _notesController.text.trim(),
+          couponCode: _appliedCouponCode,
+        );
+
+    cart.clearCart();
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => OrderSuccessScreen(order: order)),
+      (route) => route.isFirst,
     );
   }
 

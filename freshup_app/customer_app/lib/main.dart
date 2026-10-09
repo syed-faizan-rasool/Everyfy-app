@@ -4,6 +4,7 @@ import 'providers/admin_provider.dart';
 import 'providers/app_role_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
+import 'providers/catalog_provider.dart';
 import 'providers/delivery_order_provider.dart';
 import 'providers/order_provider.dart';
 import 'screens/splash_screen.dart';
@@ -22,13 +23,14 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AppRoleProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => CatalogProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => DeliveryOrderProvider()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
       child: MaterialApp(
-        title: 'FreshCart - Grocery & Delivery',
+        title: 'Everyfy',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
         home: const SplashScreen(),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../providers/app_role_provider.dart';
 import '../../providers/delivery_order_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/animated_widgets.dart';
-import '../role_selection_screen.dart';
+import '../auth/unified_auth_screen.dart';
 
 class RiderProfileScreen extends StatelessWidget {
   final bool embedded;
@@ -28,7 +29,7 @@ class RiderProfileScreen extends StatelessWidget {
               context.read<DeliveryOrderProvider>().logout();
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
+                MaterialPageRoute(builder: (_) => const UnifiedAuthScreen(initialRole: AppRole.rider)),
                 (r) => false,
               );
             },

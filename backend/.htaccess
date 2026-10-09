@@ -1,0 +1,55 @@
+# Everyfy Hostinger Apache / LiteSpeed Configuration
+# Enables clean URLs, CORS headers, and security rules
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Allow direct access to existing files and directories
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Clean API Routes
+    RewriteRule ^api/categories/?$ api/categories/index.php [L,QSA]
+    RewriteRule ^api/products/?$ api/products/index.php [L,QSA]
+    RewriteRule ^api/products/([0-9]+)/?$ api/products/detail.php?id=$1 [L,QSA]
+    RewriteRule ^api/banners/?$ api/banners/index.php [L,QSA]
+    RewriteRule ^api/coupons/apply/?$ api/coupons/apply.php [L,QSA]
+    RewriteRule ^api/addresses/?$ api/addresses/index.php [L,QSA]
+
+    RewriteRule ^api/auth/send-otp/?$ api/auth/send_otp.php [L,QSA]
+    RewriteRule ^api/auth/verify-otp/?$ api/auth/verify_otp.php [L,QSA]
+    RewriteRule ^api/auth/login/?$ api/auth/login.php [L,QSA]
+    RewriteRule ^api/auth/profile/?$ api/auth/profile.php [L,QSA]
+
+    RewriteRule ^api/orders/checkout/?$ api/orders/checkout.php [L,QSA]
+    RewriteRule ^api/orders/?$ api/orders/index.php [L,QSA]
+    RewriteRule ^api/orders/([0-9]+)/?$ api/orders/detail.php?id=$1 [L,QSA]
+    RewriteRule ^api/orders/cancel/?$ api/orders/cancel.php [L,QSA]
+
+    RewriteRule ^api/delivery/login/?$ api/delivery/login.php [L,QSA]
+    RewriteRule ^api/delivery/profile/?$ api/delivery/profile.php [L,QSA]
+    RewriteRule ^api/delivery/toggle-online/?$ api/delivery/toggle_online.php [L,QSA]
+    RewriteRule ^api/delivery/location/?$ api/delivery/location.php [L,QSA]
+    RewriteRule ^api/delivery/orders/available/?$ api/delivery/orders/available.php [L,QSA]
+    RewriteRule ^api/delivery/orders/accept/?$ api/delivery/orders/accept.php [L,QSA]
+    RewriteRule ^api/delivery/orders/status/?$ api/delivery/orders/status.php [L,QSA]
+    RewriteRule ^api/delivery/orders/history/?$ api/delivery/orders/history.php [L,QSA]
+
+    RewriteRule ^api/admin/login/?$ api/admin/login.php [L,QSA]
+    RewriteRule ^api/admin/stats/?$ api/admin/stats.php [L,QSA]
+    RewriteRule ^api/admin/orders/?$ api/admin/orders.php [L,QSA]
+    RewriteRule ^api/admin/products/?$ api/admin/products.php [L,QSA]
+    RewriteRule ^api/admin/categories/?$ api/admin/categories.php [L,QSA]
+    RewriteRule ^api/admin/riders/?$ api/admin/riders.php [L,QSA]
+</IfModule>
+
+# Security: Prevent direct viewing of SQL dumps
+<FilesMatch "\.(sql|log|env)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Enable UTF-8 encoding
+AddDefaultCharset UTF-8

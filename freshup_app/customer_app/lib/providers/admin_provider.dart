@@ -5,13 +5,14 @@ import '../models/cart_item_model.dart';
 import '../models/category_model.dart';
 import '../models/order_model.dart';
 import '../models/product_model.dart';
+import '../services/api_service.dart';
 
 class AdminProvider extends ChangeNotifier {
   bool _isLoggedIn = true; // Pre-authenticated for quick demo access
   final AdminUserModel _adminUser = const AdminUserModel(
     id: 'ADM-01',
     name: 'Muhammad Daniyal',
-    email: 'daniyal.manager@freshcart.pk',
+    email: 'daniyal.manager@everyfy.net',
     role: 'Head of Store Operations',
     phone: '03001234567',
   );
@@ -32,6 +33,7 @@ class AdminProvider extends ChangeNotifier {
     // Load mutable clone of products from DummyData
     _products = List<ProductModel>.from(DummyData.products);
     _categories = List<CategoryModel>.from(DummyData.categories);
+    fetchLiveFromBackend();
 
     // Initial Riders Fleet
     _fleet = [
@@ -400,5 +402,20 @@ class AdminProvider extends ChangeNotifier {
       _coupons[index].isActive = !_coupons[index].isActive;
       notifyListeners();
     }
+  }
+
+  /// Live sync from Everyfy Hostinger backend
+  Future<void> fetchLiveFromBackend() async {
+    try {
+      final pList = await ApiService.getProducts();
+      final cList = await ApiService.getCategories();
+      if (pList.isNotEmpty) {
+        _products = List<ProductModel>.from(pList);
+      }
+      if (cList.isNotEmpty) {
+        _categories = List<CategoryModel>.from(cList);
+      }
+      notifyListeners();
+    } catch (_) {}
   }
 }

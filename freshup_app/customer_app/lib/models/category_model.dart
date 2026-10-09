@@ -12,4 +12,12 @@ class CategoryModel {
       image: json['image'] ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'image': image,
+    };
+  }
 }

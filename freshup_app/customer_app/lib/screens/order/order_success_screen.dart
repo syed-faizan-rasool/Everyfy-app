@@ -58,7 +58,7 @@ class OrderSuccessScreen extends StatelessWidget {
               const SizedBox(height: 8),
 
               const Text(
-                'Thank you for ordering with FreshCart. Your groceries are being carefully handpicked and packed.',
+                'Thank you for ordering with Everyfy. Your groceries are being carefully handpicked and packed.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: AppColors.textSecondary,

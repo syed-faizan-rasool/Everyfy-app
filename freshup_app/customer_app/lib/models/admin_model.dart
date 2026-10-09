@@ -34,7 +34,7 @@ class StoreSettingsModel {
     this.minOrderAmount = 300,
     this.baseDeliveryFee = 120,
     this.freeDeliveryThreshold = 2000,
-    this.storeName = 'FreshCart Hub · Gojra',
+    this.storeName = 'Everyfy Hub · Gojra',
     this.storeAddress = 'Main Bazaar, Gojra',
     this.supportPhone = '046-3510099',
     this.openingHours = '08:00 AM - 11:30 PM',

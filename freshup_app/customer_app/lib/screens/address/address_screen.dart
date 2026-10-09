@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../data/dummy_data.dart';
 import '../../models/address_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/api_service.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/animated_widgets.dart';
 
@@ -132,6 +133,7 @@ class _AddressScreenState extends State<AddressScreen> {
 
                         DummyData.addresses.add(newAddress);
                         this.context.read<AuthProvider>().setAddress(newAddress);
+                        ApiService.saveAddress(newAddress).catchError((_) => null);
                         Navigator.pop(ctx);
                         setState(() {});
                         ScaffoldMessenger.of(this.context).showSnackBar(

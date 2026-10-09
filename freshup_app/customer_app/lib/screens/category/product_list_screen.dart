@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../data/dummy_data.dart';
+import 'package:provider/provider.dart';
 import '../../models/category_model.dart';
 import '../../models/product_model.dart';
+import '../../providers/catalog_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/animated_widgets.dart';
 import '../../widgets/product_card.dart';
@@ -26,7 +27,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    List<ProductModel> products = DummyData.productsByCategory(_selectedCategory.id);
+    final catalog = context.watch<CatalogProvider>();
+    List<ProductModel> products = catalog.productsByCategory(_selectedCategory.id);
+    final allCategories = catalog.categories;
 
     if (_selectedFilter == 'Offers') {
       products = products.where((p) => p.hasDiscount).toList();
@@ -51,10 +54,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: DummyData.categories.length,
+              itemCount: allCategories.length,
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (_, i) {
-                final cat = DummyData.categories[i];
+                final cat = allCategories[i];
                 final isSelected = cat.id == _selectedCategory.id;
                 return BouncingButton(
                   onTap: () {
