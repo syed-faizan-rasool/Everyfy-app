@@ -51,7 +51,8 @@ class RiderHomeScreen extends StatelessWidget {
                         color: AppColors.primaryLight,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Icon(Icons.two_wheeler_rounded, color: AppColors.primary, size: 24),
+                      child: const Icon(Icons.two_wheeler_rounded,
+                          color: AppColors.primary, size: 24),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -70,7 +71,8 @@ class RiderHomeScreen extends StatelessWidget {
                               ),
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: AppColors.primaryLight,
                                   borderRadius: BorderRadius.circular(6),
@@ -89,7 +91,8 @@ class RiderHomeScreen extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             provider.riderVehicle,
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                            style: const TextStyle(
+                                color: AppColors.textSecondary, fontSize: 12),
                           ),
                         ],
                       ),
@@ -100,12 +103,17 @@ class RiderHomeScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: provider.isOnline ? AppColors.primaryLight : AppColors.cardBorder,
+                          color: provider.isOnline
+                              ? AppColors.primaryLight
+                              : AppColors.cardBorder,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: provider.isOnline ? AppColors.primary : AppColors.textMuted,
+                            color: provider.isOnline
+                                ? AppColors.primary
+                                : AppColors.textMuted,
                           ),
                         ),
                         child: Row(
@@ -114,7 +122,9 @@ class RiderHomeScreen extends StatelessWidget {
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                color: provider.isOnline ? AppColors.success : AppColors.textMuted,
+                                color: provider.isOnline
+                                    ? AppColors.success
+                                    : AppColors.textMuted,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -122,7 +132,9 @@ class RiderHomeScreen extends StatelessWidget {
                             Text(
                               provider.isOnline ? 'Online' : 'Offline',
                               style: TextStyle(
-                                color: provider.isOnline ? AppColors.primaryDark : AppColors.textSecondary,
+                                color: provider.isOnline
+                                    ? AppColors.primaryDark
+                                    : AppColors.textSecondary,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 12,
                               ),
@@ -139,13 +151,15 @@ class RiderHomeScreen extends StatelessWidget {
             // Today's Stats Row
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 child: Row(
                   children: [
                     Expanded(
                       child: _buildQuickStatCard(
                         title: 'Today\'s Earning',
-                        value: 'Rs ${provider.todayEarnings.toStringAsFixed(0)}',
+                        value:
+                            'Rs ${provider.todayEarnings.toStringAsFixed(0)}',
                         icon: Icons.account_balance_wallet_rounded,
                         color: AppColors.primary,
                       ),
@@ -163,7 +177,8 @@ class RiderHomeScreen extends StatelessWidget {
                     Expanded(
                       child: _buildQuickStatCard(
                         title: 'Distance',
-                        value: '${provider.todayDistanceKm.toStringAsFixed(1)} km',
+                        value:
+                            '${provider.todayDistanceKm.toStringAsFixed(1)} km',
                         icon: Icons.route_rounded,
                         color: AppColors.accent,
                       ),
@@ -182,7 +197,8 @@ class RiderHomeScreen extends StatelessWidget {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ActiveDeliveryScreen(order: activeOrder),
+                        builder: (_) =>
+                            ActiveDeliveryScreen(order: activeOrder),
                       ),
                     ),
                     child: Container(
@@ -211,7 +227,8 @@ class RiderHomeScreen extends StatelessWidget {
                                   Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.2),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: const Icon(
@@ -233,7 +250,8 @@ class RiderHomeScreen extends StatelessWidget {
                                 ],
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: AppColors.accent,
                                   borderRadius: BorderRadius.circular(12),
@@ -263,7 +281,8 @@ class RiderHomeScreen extends StatelessWidget {
                             activeOrder.address,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white70, fontSize: 13),
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 13),
                           ),
                           const SizedBox(height: 14),
                           Row(
@@ -271,16 +290,23 @@ class RiderHomeScreen extends StatelessWidget {
                             children: [
                               Text(
                                 'Earn Rs ${activeOrder.earning.toStringAsFixed(0)} · ${activeOrder.distanceKm} km',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13),
                               ),
                               const Row(
                                 children: [
                                   Text(
                                     'Resume Delivery',
-                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13),
                                   ),
                                   SizedBox(width: 4),
-                                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 16),
+                                  Icon(Icons.arrow_forward_rounded,
+                                      color: Colors.white, size: 16),
                                 ],
                               ),
                             ],
@@ -312,7 +338,8 @@ class RiderHomeScreen extends StatelessWidget {
                         const SizedBox(width: 8),
                         if (provider.isOnline)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
                               color: AppColors.primaryLight,
                               borderRadius: BorderRadius.circular(10),
@@ -331,7 +358,8 @@ class RiderHomeScreen extends StatelessWidget {
                     if (provider.isOnline)
                       const Text(
                         'Pull to refresh',
-                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        style: TextStyle(
+                            fontSize: 12, color: AppColors.textSecondary),
                       ),
                   ],
                 ),
@@ -347,7 +375,8 @@ class RiderHomeScreen extends StatelessWidget {
                     icon: Icons.power_settings_new_rounded,
                     iconColor: AppColors.textMuted,
                     title: 'You are Offline',
-                    description: 'Go online to start receiving nearby grocery delivery requests and maximize your daily earnings.',
+                    description:
+                        'Go online to start receiving nearby grocery delivery requests and maximize your daily earnings.',
                     buttonText: 'Go Online',
                     onButtonPressed: () => provider.setOnlineStatus(true),
                   ),
@@ -360,7 +389,8 @@ class RiderHomeScreen extends StatelessWidget {
                   child: EmptyStateWidget(
                     icon: Icons.moped_rounded,
                     title: 'No delivery requests right now',
-                    description: 'You\'re all caught up! New orders from Everyfy hub will appear here automatically.',
+                    description:
+                        'You\'re all caught up! New orders from Everyfy hub will appear here automatically.',
                   ),
                 ),
               )
@@ -406,12 +436,18 @@ class RiderHomeScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.textPrimary),
+            style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+                color: AppColors.textPrimary),
           ),
           const SizedBox(height: 2),
           Text(
             title,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -463,21 +499,27 @@ class _RiderOrderCard extends StatelessWidget {
                         color: AppColors.primaryLight,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.shopping_bag_outlined, color: AppColors.primary, size: 16),
+                      child: const Icon(Icons.shopping_bag_outlined,
+                          color: AppColors.primary, size: 16),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       '#${order.orderNumber}',
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.textPrimary),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: AppColors.textPrimary),
                     ),
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: AppColors.primaryLight,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                    border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     'Earn Rs ${order.earning.toStringAsFixed(0)}',
@@ -496,7 +538,8 @@ class _RiderOrderCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.location_on_rounded, color: AppColors.accent, size: 18),
+                const Icon(Icons.location_on_rounded,
+                    color: AppColors.accent, size: 18),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -504,14 +547,18 @@ class _RiderOrderCard extends StatelessWidget {
                     children: [
                       Text(
                         order.customerName,
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: AppColors.textPrimary),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         order.address,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                        style: const TextStyle(
+                            color: AppColors.textSecondary, fontSize: 12),
                       ),
                     ],
                   ),
@@ -522,7 +569,9 @@ class _RiderOrderCard extends StatelessWidget {
 
             // Items preview
             Text(
-              order.items.map((it) => '${it.product.name} (x${it.quantity})').join(', '),
+              order.items
+                  .map((it) => '${it.product.name} (x${it.quantity})')
+                  .join(', '),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
@@ -537,11 +586,15 @@ class _RiderOrderCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.route_rounded, size: 16, color: AppColors.textSecondary),
+                    const Icon(Icons.route_rounded,
+                        size: 16, color: AppColors.textSecondary),
                     const SizedBox(width: 4),
                     Text(
                       '${order.distanceKm} km · ${order.paymentMethod}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -557,9 +610,11 @@ class _RiderOrderCard extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(100, 36),
                     padding: const EdgeInsets.symmetric(horizontal: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
-                  child: const Text('View & Accept', style: TextStyle(fontSize: 12)),
+                  child: const Text('View & Accept',
+                      style: TextStyle(fontSize: 12)),
                 ),
               ],
             ),

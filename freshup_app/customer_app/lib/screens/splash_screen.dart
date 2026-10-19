@@ -47,9 +47,16 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
-  void _navigate() {
+  Future<void> _navigate() async {
     if (!mounted) return;
     final auth = context.read<AuthProvider>();
+    final roleProv = context.read<AppRoleProvider>();
+
+    // Restore persistent session if valid (< 7 days)
+    await auth.checkSavedSession();
+
+    if (!mounted) return;
+    roleProv.setRole(auth.role);
 
     Widget target;
     if (auth.isLoggedIn) {

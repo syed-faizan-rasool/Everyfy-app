@@ -31,7 +31,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$email]);
             $admin = $stmt->fetch();
 
-            if ($admin && (password_verify($password, $admin['password']) || ($admin['email'] === 'admin@everyfy.net' && $password === 'admin123456'))) {
+            $passValid = $admin && (($admin['password'] === $password) || password_verify($password, $admin['password']));
+
+            if ($passValid) {
+                if ($admin['password'] === $password) {
+                    $newHash = password_hash($password, PASSWORD_BCRYPT);
+                    $pdo->prepare("UPDATE admins SET password = ? WHERE id = ?")->execute([$newHash, $admin['id']]);
+                }
                 $_SESSION['admin_logged_in'] = true;
                 $_SESSION['admin_id']        = (int)$admin['id'];
                 $_SESSION['admin_name']      = $admin['name'];

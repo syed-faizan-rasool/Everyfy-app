@@ -14,8 +14,8 @@ class RiderLoginScreen extends StatefulWidget {
 }
 
 class _RiderLoginScreenState extends State<RiderLoginScreen> {
-  final _phoneController = TextEditingController(text: '3019876543');
-  final _passwordController = TextEditingController(text: '123456');
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _loading = false;
 
@@ -51,17 +51,31 @@ class _RiderLoginScreenState extends State<RiderLoginScreen> {
         MaterialPageRoute(builder: (_) => const RiderMainNavigationScreen()),
       );
     } else {
-      _showError('Invalid login credentials');
+      _showError('Invalid mobile number or rider password. Please check your credentials.');
     }
   }
 
   void _showError(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.error,
+        content: Row(
+          children: [
+            const Icon(Icons.shield_outlined, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFFDC2626),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        elevation: 6,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
@@ -260,24 +274,7 @@ class _RiderLoginScreenState extends State<RiderLoginScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // Quick Demo Fill
-              Center(
-                child: TextButton.icon(
-                  onPressed: () {
-                    _phoneController.text = '3019876543';
-                    _passwordController.text = '123456';
-                    _handleLogin();
-                  },
-                  icon: const Icon(Icons.flash_on_rounded, size: 18, color: AppColors.accent),
-                  label: const Text(
-                    'Quick Test Login (Demo Account)',
-                    style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
+               const SizedBox(height: 24),
 
               // Switch Role
               Center(

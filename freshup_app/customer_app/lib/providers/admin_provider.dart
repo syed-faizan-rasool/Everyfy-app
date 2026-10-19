@@ -8,13 +8,13 @@ import '../models/product_model.dart';
 import '../services/api_service.dart';
 
 class AdminProvider extends ChangeNotifier {
-  bool _isLoggedIn = true; // Pre-authenticated for quick demo access
-  final AdminUserModel _adminUser = const AdminUserModel(
+  bool _isLoggedIn = false;
+  AdminUserModel _adminUser = const AdminUserModel(
     id: 'ADM-01',
-    name: 'Muhammad Daniyal',
-    email: 'daniyal.manager@everyfy.net',
-    role: 'Head of Store Operations',
-    phone: '03001234567',
+    name: 'Syed Faizan Rasool',
+    email: 'syedfaizanrasool4@gmail.com',
+    role: 'super_admin',
+    phone: '03051571113',
   );
 
   StoreSettingsModel _settings = StoreSettingsModel();
@@ -217,8 +217,15 @@ class AdminProvider extends ChangeNotifier {
   List<CouponModel> get coupons => List.unmodifiable(_coupons);
 
   // Authentication
-  bool login(String email, String password) {
+  bool login(String email, String password, {String? name, String? phone, String? role}) {
     _isLoggedIn = true;
+    _adminUser = AdminUserModel(
+      id: 'ADM-01',
+      name: name ?? (email.contains('faizan') ? 'Syed Faizan Rasool' : 'Store Admin'),
+      email: email,
+      role: role ?? 'super_admin',
+      phone: phone ?? '03051571113',
+    );
     notifyListeners();
     return true;
   }

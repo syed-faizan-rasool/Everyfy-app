@@ -96,6 +96,15 @@ class ApiService {
         }),
       ).timeout(const Duration(seconds: 10));
 
+      final bodyTrim = res.body.trim();
+      if (bodyTrim.startsWith('<') || (!bodyTrim.startsWith('{') && !bodyTrim.startsWith('['))) {
+        return {
+          'success': false,
+          'message': 'Server returned unexpected response (Status ${res.statusCode})',
+          'is_server_error': true,
+        };
+      }
+
       final data = jsonDecode(res.body);
       if (data['success'] == true && data['data'] != null) {
         if (data['data']['token'] != null) {
@@ -411,6 +420,15 @@ class ApiService {
           'cnic': cnic,
         }),
       ).timeout(const Duration(seconds: 12));
+
+      final bodyTrim = res.body.trim();
+      if (bodyTrim.startsWith('<') || (!bodyTrim.startsWith('{') && !bodyTrim.startsWith('['))) {
+        return {
+          'success': false,
+          'message': 'Registration endpoint returned status ${res.statusCode}',
+          'is_server_error': true,
+        };
+      }
 
       final data = jsonDecode(res.body);
       if (data['success'] == true && data['data'] != null) {

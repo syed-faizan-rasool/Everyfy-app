@@ -133,18 +133,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       setState(() => _selectedFilter = 'All');
                     },
                   )
-                : GridView.builder(
+                : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 14,
-                      crossAxisSpacing: 14,
-                      childAspectRatio: 0.65,
-                    ),
                     itemCount: products.length,
                     itemBuilder: (_, i) => ProductCard(
                       product: products[i],
-                      heroPrefix: 'cat_${_selectedCategory.id}',
+                      heroPrefix: 'cat_${_selectedCategory.id}_$i',
+                      isHorizontal: true,
                     ),
                   ),
           ),

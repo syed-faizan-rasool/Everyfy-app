@@ -39,3 +39,7 @@
 *.ipr
 *.iws
 .vscode/
+
+# Local & Test files
+test_*.json
+*.local.json

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/app_role_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../utils/app_colors.dart';
 import 'admin_main_navigation_screen.dart';
 
@@ -13,8 +14,8 @@ class AdminLoginScreen extends StatefulWidget {
 }
 
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
-  final _emailController = TextEditingController(text: 'admin@everyfy.net');
-  final _passwordController = TextEditingController(text: 'admin123');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
@@ -30,34 +31,45 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter manager email and password'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      _showError('Please enter manager email and password');
       return;
     }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 600));
+    final res = await context.read<AuthProvider>().login(
+      identifier: email,
+      password: password,
+      role: 'admin',
+    );
     if (!mounted) return;
-
-    context.read<AdminProvider>().login(email, password);
-    context.read<AppRoleProvider>().setRole(AppRole.admin);
-
     setState(() => _isLoading = false);
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const AdminMainNavigationScreen()),
-    );
+    if (res['success'] == true) {
+      context.read<AdminProvider>().login(email, password);
+      context.read<AppRoleProvider>().setRole(AppRole.admin);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AdminMainNavigationScreen()),
+      );
+    } else {
+      _showError(res['message'] ?? 'Invalid manager email or password');
+    }
   }
 
-  void _quickDemoLogin() {
-    _emailController.text = 'admin@everyfy.net';
-    _passwordController.text = 'admin123';
-    _handleLogin();
+  void _showError(String message) {
+    String cleanMsg = message;
+    if (cleanMsg.contains('Default pass') || cleanMsg.contains('1234') || cleanMsg.contains('admin123456')) {
+      cleanMsg = 'Invalid manager email or password. Please try again.';
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(cleanMsg),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   @override
@@ -253,53 +265,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 ),
               ),
 
-              const SizedBox(height: 20),
-
-              // Quick Demo Manager Access Card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFA7F3D0)),
-                ),
-                child: Column(
-                  children: [
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.bolt_rounded, color: Color(0xFF047857), size: 20),
-                        SizedBox(width: 6),
-                        Text(
-                          'Quick Demo Manager Access',
-                          style: TextStyle(
-                            color: Color(0xFF065F46),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Tap below to prefill credentials and enter directly',
-                      style: TextStyle(color: Color(0xFF047857), fontSize: 12),
-                    ),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: _quickDemoLogin,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF059669),
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 42),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('1-Tap Manager Demo Login', style: TextStyle(fontWeight: FontWeight.w700)),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 24),
             ],
           ),

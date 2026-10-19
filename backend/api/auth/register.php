@@ -22,8 +22,12 @@ $email    = trim($data['email'] ?? '');
 $password = trim($data['password'] ?? '');
 $role     = trim($data['role'] ?? 'customer');
 
-if (empty($name) || empty($phone) || empty($password)) {
-    sendError('Name, phone number, and password are required!', 422);
+if (empty($name) || empty($phone) || empty($email) || empty($password)) {
+    sendError('Name, phone number, email address, and password are required!', 422);
+}
+
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    sendError('Please provide a valid email address!', 422);
 }
 
 if (strlen($password) < 4) {
@@ -70,14 +74,14 @@ try {
         ], 'Rider registered successfully!', 201);
     } else {
         // Customer Registration
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE phone = ? LIMIT 1");
-        $stmt->execute([$phone]);
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE phone = ? OR email = ? LIMIT 1");
+        $stmt->execute([$phone, $email]);
         if ($stmt->fetch()) {
-            sendError('A customer with this phone number already exists! Please log in.', 409);
+            sendError('An account with this phone number or email already exists! Please log in.', 409);
         }
 
         $ins = $pdo->prepare("INSERT INTO users (name, phone, email, password, is_active) VALUES (?, ?, ?, ?, 1)");
-        $ins->execute([$name, $phone, !empty($email) ? $email : null, $hashedPassword]);
+        $ins->execute([$name, $phone, $email, $hashedPassword]);
         $newId = $pdo->lastInsertId();
 
         $token = AuthHelper::generateToken([

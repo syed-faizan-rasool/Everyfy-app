@@ -7,6 +7,7 @@ import 'package:grocery_customer_app/models/order_model.dart';
 import 'package:grocery_customer_app/providers/app_role_provider.dart';
 import 'package:grocery_customer_app/providers/auth_provider.dart';
 import 'package:grocery_customer_app/providers/cart_provider.dart';
+import 'package:grocery_customer_app/providers/catalog_provider.dart';
 import 'package:grocery_customer_app/providers/delivery_order_provider.dart';
 import 'package:grocery_customer_app/providers/order_provider.dart';
 import 'package:grocery_customer_app/screens/home/home_screen.dart';
@@ -32,6 +33,7 @@ Widget _buildTestApp(
   Widget child, {
   AppRoleProvider? role,
   AuthProvider? auth,
+  CatalogProvider? catalog,
   CartProvider? cart,
   OrderProvider? order,
   DeliveryOrderProvider? delivery,
@@ -41,6 +43,7 @@ Widget _buildTestApp(
     providers: [
       ChangeNotifierProvider(create: (_) => role ?? AppRoleProvider()),
       ChangeNotifierProvider(create: (_) => auth ?? AuthProvider()),
+      ChangeNotifierProvider(create: (_) => catalog ?? CatalogProvider()),
       ChangeNotifierProvider(create: (_) => cart ?? CartProvider()),
       ChangeNotifierProvider(create: (_) => order ?? OrderProvider()),
       ChangeNotifierProvider(create: (_) => delivery ?? DeliveryOrderProvider()),
@@ -60,8 +63,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
 
     await tester.pumpWidget(const MyApp());
-    expect(find.text('Fresh'), findsOneWidget);
-    expect(find.text('Cart'), findsOneWidget);
+    expect(find.text('Everyfy'), findsOneWidget);
     await tester.pump(const Duration(seconds: 3));
   });
 
@@ -383,7 +385,7 @@ void main() {
     ));
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('FreshCart Hub · Gulberg'), findsOneWidget);
+    expect(find.text(admin.settings.storeName), findsOneWidget);
     expect(find.text("Today's Gross Sales"), findsOneWidget);
     expect(find.text("Today's Orders"), findsOneWidget);
     expect(find.text('Quick Operations'), findsOneWidget);

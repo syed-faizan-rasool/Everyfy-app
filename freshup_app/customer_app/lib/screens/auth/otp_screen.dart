@@ -14,7 +14,7 @@ class OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<OtpScreen> {
-  final _otpController = TextEditingController(text: '1234');
+  final _otpController = TextEditingController();
   bool _loading = false;
   String? _error;
   int _resendTimer = 45;
@@ -65,7 +65,7 @@ class _OtpScreenState extends State<OtpScreen> {
         (route) => false,
       );
     } else {
-      setState(() => _error = 'Invalid OTP code. Please enter 1234 or 4 digits.');
+      setState(() => _error = 'Invalid verification code. Please verify and try again.');
     }
   }
 
@@ -74,7 +74,7 @@ class _OtpScreenState extends State<OtpScreen> {
       _startTimer();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('New OTP sent successfully! (Use 1234)'),
+          content: const Text('New OTP sent successfully!'),
           backgroundColor: AppColors.primary,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -183,28 +183,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
               ],
 
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primary),
-                    SizedBox(width: 8),
-                    Text(
-                      'Demo Hint: Enter 1234 or any 4 digits to log in.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+
 
               const SizedBox(height: 32),
 

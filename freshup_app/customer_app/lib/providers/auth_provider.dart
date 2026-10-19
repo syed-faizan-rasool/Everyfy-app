@@ -1,10 +1,20 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/address_model.dart';
-import '../data/dummy_data.dart';
 import '../services/api_service.dart';
 import 'app_role_provider.dart';
 
 class AuthProvider extends ChangeNotifier {
+  static const String _kIsLoggedIn = 'auth_is_logged_in';
+  static const String _kUserId = 'auth_user_id';
+  static const String _kName = 'auth_name';
+  static const String _kPhone = 'auth_phone';
+  static const String _kEmail = 'auth_email';
+  static const String _kRole = 'auth_role';
+  static const String _kToken = 'auth_token';
+  static const String _kLoginTimestamp = 'auth_login_timestamp';
+  static const int _sessionValidityDays = 7; // Auto-login valid for 7 days
+
   bool _isLoggedIn = false;
   int _userId = 0;
   String _name = '';
@@ -21,10 +31,88 @@ class AuthProvider extends ChangeNotifier {
   String get email => _email;
   AppRole get role => _role;
   String? get errorMessage => _errorMessage;
-  AddressModel? get selectedAddress =>
-      _selectedAddress ?? (DummyData.addresses.isNotEmpty ? DummyData.addresses.first : null);
+  AddressModel? get selectedAddress => _selectedAddress;
 
-  /// Smart Multi-Role Login (Customer, Rider or Admin)
+  /// Restore existing session from local storage if within 7 days
+  Future<bool> checkSavedSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isLoggedIn = prefs.getBool(_kIsLoggedIn) ?? false;
+      if (!isLoggedIn) {
+        _isLoggedIn = false;
+        return false;
+      }
+
+      final timestamp = prefs.getInt(_kLoginTimestamp) ?? 0;
+      if (timestamp == 0) {
+        await logout();
+        return false;
+      }
+
+      final loginDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      final daysDiff = DateTime.now().difference(loginDate).inDays;
+
+      // Check if session has exceeded 7 days (1 week)
+      if (daysDiff >= _sessionValidityDays) {
+        // Expired after 1 week! Require user to log in again.
+        await logout();
+        return false;
+      }
+
+      // Valid session! Restore user state
+      _isLoggedIn = true;
+      _userId = prefs.getInt(_kUserId) ?? 1;
+      _name = prefs.getString(_kName) ?? '';
+      _phone = prefs.getString(_kPhone) ?? '';
+      _email = prefs.getString(_kEmail) ?? '';
+
+      final roleStr = prefs.getString(_kRole) ?? 'customer';
+      if (roleStr == 'admin') {
+        _role = AppRole.admin;
+      } else if (roleStr == 'rider') {
+        _role = AppRole.rider;
+      } else {
+        _role = AppRole.customer;
+      }
+
+      final token = prefs.getString(_kToken);
+      if (token != null && token.isNotEmpty) {
+        ApiService.setAuthToken(token);
+      }
+
+      // Restore user's saved address from backend
+      try {
+        final addrs = await ApiService.getAddresses();
+        if (addrs.isNotEmpty) {
+          _selectedAddress = addrs.firstWhere((a) => a.isDefault, orElse: () => addrs.first);
+        }
+      } catch (_) {}
+
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Save active user session locally
+  Future<void> _saveSessionToPrefs([String? token]) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_kIsLoggedIn, true);
+      await prefs.setInt(_kUserId, _userId);
+      await prefs.setString(_kName, _name);
+      await prefs.setString(_kPhone, _phone);
+      await prefs.setString(_kEmail, _email);
+      await prefs.setString(_kRole, _role.name);
+      if (token != null && token.isNotEmpty) {
+        await prefs.setString(_kToken, token);
+      }
+      await prefs.setInt(_kLoginTimestamp, DateTime.now().millisecondsSinceEpoch);
+    } catch (_) {}
+  }
+
+  /// Strict Live Multi-Role Login against Everyfy Backend (Customer, Rider or Admin)
   Future<Map<String, dynamic>> login({
     required String identifier,
     required String password,
@@ -57,79 +145,32 @@ class AuthProvider extends ChangeNotifier {
           _role = AppRole.customer;
         }
 
+        final token = data['token'] ?? ApiService.authToken;
+        await _saveSessionToPrefs(token);
+
+        // Fetch user's saved addresses live from server
+        try {
+          final addrs = await ApiService.getAddresses();
+          if (addrs.isNotEmpty) {
+            _selectedAddress = addrs.firstWhere((a) => a.isDefault, orElse: () => addrs.first);
+          }
+        } catch (_) {}
+
         notifyListeners();
         return {'success': true, 'role': _role, 'message': res['message']};
       } else {
-        final msg = (res['message'] ?? '').toString();
-        if (_isNetworkError(msg)) {
-          return _performOfflineLogin(identifier, role);
-        }
-        _errorMessage = res['message'] ?? 'Login failed';
+        _errorMessage = res['message'] ?? 'Login failed. Please check your credentials.';
         notifyListeners();
         return {'success': false, 'message': _errorMessage};
       }
     } catch (e) {
-      if (_isNetworkError(e.toString())) {
-        return _performOfflineLogin(identifier, role);
-      }
-      _errorMessage = e.toString();
+      _errorMessage = 'Could not connect to server: ${e.toString()}';
       notifyListeners();
       return {'success': false, 'message': _errorMessage};
     }
   }
 
-  bool _isNetworkError(String err) {
-    return err.contains('SocketException') ||
-        err.contains('Failed host lookup') ||
-        err.contains('Connection refused') ||
-        err.contains('ClientException') ||
-        err.contains('TimeoutException') ||
-        err.contains('Failed to connect') ||
-        err.contains('Network is unreachable') ||
-        err.contains('HandshakeException');
-  }
-
-  Map<String, dynamic> _performOfflineLogin(String identifier, String role) {
-    _isLoggedIn = true;
-    _userId = 1;
-    _phone = identifier;
-    if (role == 'admin' || identifier.contains('admin') || identifier == 'syedfaizanrasool4@gmail.com') {
-      _role = AppRole.admin;
-      _name = 'Muhammad Daniyal';
-      _email = 'syedfaizanrasool4@gmail.com';
-    } else if (role == 'rider' || identifier.contains('rider')) {
-      _role = AppRole.rider;
-      _name = 'Ahmed Khan';
-      _email = 'rider@everyfy.net';
-    } else {
-      _role = AppRole.customer;
-      _name = 'Daniyal Customer';
-      _email = 'customer@everyfy.net';
-    }
-    notifyListeners();
-    return {
-      'success': true,
-      'role': _role,
-      'message': 'Connected (Demo Offline Session)',
-    };
-  }
-
-  Map<String, dynamic> _performOfflineRegister(String name, String phone, String? email, String role) {
-    _isLoggedIn = true;
-    _userId = 1;
-    _name = name;
-    _phone = phone;
-    _email = email ?? '';
-    _role = role == 'rider' ? AppRole.rider : AppRole.customer;
-    notifyListeners();
-    return {
-      'success': true,
-      'role': _role,
-      'message': 'Account registered successfully',
-    };
-  }
-
-  /// Register new Customer or Rider
+  /// Strict Live Registration for Customer or Rider
   Future<Map<String, dynamic>> register({
     required String name,
     required String phone,
@@ -164,58 +205,52 @@ class AuthProvider extends ChangeNotifier {
         _email = user['email'] ?? (email ?? '');
 
         _role = role == 'rider' ? AppRole.rider : AppRole.customer;
+        final token = data['token'] ?? ApiService.authToken;
+        await _saveSessionToPrefs(token);
+
         notifyListeners();
         return {'success': true, 'role': _role, 'message': res['message']};
       } else {
-        final msg = (res['message'] ?? '').toString();
-        if (_isNetworkError(msg)) {
-          return _performOfflineRegister(name, phone, email, role);
-        }
-        _errorMessage = res['message'] ?? 'Registration failed';
+        _errorMessage = res['message'] ?? 'Registration failed. Please verify your details.';
         notifyListeners();
         return {'success': false, 'message': _errorMessage};
       }
     } catch (e) {
-      if (_isNetworkError(e.toString())) {
-        return _performOfflineRegister(name, phone, email, role);
-      }
-      _errorMessage = e.toString();
+      _errorMessage = 'Connection error: ${e.toString()}';
       notifyListeners();
       return {'success': false, 'message': _errorMessage};
     }
   }
 
-  /// Send OTP code via backend API with fallback
+  /// Send OTP code via backend API
   Future<void> sendOtp(String phone) async {
     _phone = phone;
     try {
       await ApiService.sendOtp(phone);
-    } catch (_) {
-      await Future.delayed(const Duration(milliseconds: 600));
-    }
+    } catch (_) {}
   }
 
-  /// Verify OTP code via backend API with fallback
+  /// Verify OTP code strictly via live backend API
   Future<bool> verifyOtp(String otp) async {
     try {
       final res = await ApiService.verifyOtp(_phone, otp);
       if (res['success'] == true && res['data'] != null) {
+        final data = res['data'];
+        final user = data['user'] ?? {};
         _isLoggedIn = true;
-        _name = res['data']['user']?['name'] ?? 'Customer';
+        _userId = user['id'] ?? 0;
+        _name = user['name'] ?? 'Customer';
+        _phone = user['phone'] ?? _phone;
+        _email = user['email'] ?? '';
         _role = AppRole.customer;
+
+        final token = data['token'] ?? ApiService.authToken;
+        await _saveSessionToPrefs(token);
+
         notifyListeners();
         return true;
       }
     } catch (_) {}
-
-    // Fallback in case host is not yet reachable or in demo mode
-    if (otp == '1234' || otp.length == 4 || otp.length == 6) {
-      _isLoggedIn = true;
-      _name = 'Customer';
-      _role = AppRole.customer;
-      notifyListeners();
-      return true;
-    }
     return false;
   }
 
@@ -224,7 +259,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void logout() {
+  Future<void> logout() async {
     _isLoggedIn = false;
     _userId = 0;
     _name = '';
@@ -233,6 +268,19 @@ class AuthProvider extends ChangeNotifier {
     _role = AppRole.customer;
     _selectedAddress = null;
     ApiService.setAuthToken(null);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_kIsLoggedIn);
+      await prefs.remove(_kUserId);
+      await prefs.remove(_kName);
+      await prefs.remove(_kPhone);
+      await prefs.remove(_kEmail);
+      await prefs.remove(_kRole);
+      await prefs.remove(_kToken);
+      await prefs.remove(_kLoginTimestamp);
+    } catch (_) {}
+
     notifyListeners();
   }
 }

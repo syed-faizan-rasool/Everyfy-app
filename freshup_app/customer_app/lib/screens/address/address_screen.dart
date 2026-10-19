@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../data/dummy_data.dart';
 import '../../models/address_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
@@ -15,6 +14,31 @@ class AddressScreen extends StatefulWidget {
 }
 
 class _AddressScreenState extends State<AddressScreen> {
+  List<AddressModel> _addresses = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAddresses();
+  }
+
+  Future<void> _loadAddresses() async {
+    setState(() => _isLoading = true);
+    final list = await ApiService.getAddresses();
+    if (mounted) {
+      setState(() {
+        _addresses = list;
+        _isLoading = false;
+      });
+      final auth = context.read<AuthProvider>();
+      if (auth.selectedAddress == null && list.isNotEmpty) {
+        final def = list.firstWhere((a) => a.isDefault, orElse: () => list.first);
+        auth.setAddress(def);
+      }
+    }
+  }
+
   void _openAddAddressSheet() {
     final addressLineController = TextEditingController();
     final areaController = TextEditingController();
@@ -110,12 +134,11 @@ class _AddressScreenState extends State<AddressScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // TODO: open "Add new address" form with a map picker (google_maps_flutter)
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         if (addressLineController.text.trim().isEmpty || areaController.text.trim().isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Please fill out all address fields')),
@@ -124,21 +147,31 @@ class _AddressScreenState extends State<AddressScreen> {
                         }
 
                         final newAddress = AddressModel(
-                          id: DateTime.now().millisecondsSinceEpoch,
+                          id: 0,
                           label: selectedLabel,
                           addressLine: addressLineController.text.trim(),
                           area: areaController.text.trim(),
                           city: cityController.text.trim(),
+                          isDefault: _addresses.isEmpty,
                         );
 
-                        DummyData.addresses.add(newAddress);
-                        this.context.read<AuthProvider>().setAddress(newAddress);
-                        ApiService.saveAddress(newAddress).catchError((_) => null);
-                        Navigator.pop(ctx);
-                        setState(() {});
-                        ScaffoldMessenger.of(this.context).showSnackBar(
-                          const SnackBar(content: Text('New delivery address saved!')),
-                        );
+                        final nav = Navigator.of(context);
+                        final sm = ScaffoldMessenger.of(context);
+                        final auth = this.context.read<AuthProvider>();
+
+                        final savedAddress = await ApiService.saveAddress(newAddress);
+                        final finalAddr = savedAddress ?? newAddress;
+
+                        if (mounted) {
+                          setState(() {
+                            _addresses.add(finalAddr);
+                          });
+                          auth.setAddress(finalAddr);
+                          nav.pop();
+                          sm.showSnackBar(
+                            const SnackBar(content: Text('New delivery address saved!')),
+                          );
+                        }
                       },
                       child: const Text('Save & Select Address'),
                     ),
@@ -164,23 +197,65 @@ class _AddressScreenState extends State<AddressScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: DummyData.addresses.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, i) {
-          final address = DummyData.addresses[i];
-          final selected = auth.selectedAddress?.id == address.id;
-          return _AddressCard(
-            address: address,
-            selected: selected,
-            onTap: () {
-              context.read<AuthProvider>().setAddress(address);
-              Navigator.pop(context);
-            },
-          );
-        },
-      ),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          : _addresses.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryLight.withValues(alpha: 0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.location_off_rounded,
+                              size: 40, color: AppColors.primary),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'No Saved Addresses',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Add your home or office address to receive fresh grocery delivery in 10-15 minutes.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                              height: 1.4),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _addresses.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (_, i) {
+                    final address = _addresses[i];
+                    final selected = auth.selectedAddress?.id == address.id;
+                    return _AddressCard(
+                      address: address,
+                      selected: selected,
+                      onTap: () {
+                        context.read<AuthProvider>().setAddress(address);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: const BoxDecoration(

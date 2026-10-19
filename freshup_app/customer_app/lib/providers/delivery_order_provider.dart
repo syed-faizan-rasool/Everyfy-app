@@ -97,15 +97,6 @@ class DeliveryOrderProvider extends ChangeNotifier {
         return true;
       }
     } catch (_) {}
-
-    // Fallback for demo testing
-    if (phone.isNotEmpty && password.length >= 4) {
-      _isLoggedIn = true;
-      _riderPhone = phone;
-      _riderName = 'Ahmed Khan';
-      notifyListeners();
-      return true;
-    }
     return false;
   }
 

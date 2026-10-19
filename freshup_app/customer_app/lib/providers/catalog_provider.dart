@@ -1,24 +1,20 @@
 import 'package:flutter/material.dart';
-import '../data/dummy_data.dart';
 import '../models/banner_model.dart';
 import '../models/category_model.dart';
 import '../models/product_model.dart';
 import '../services/api_service.dart';
 
-/// Real-time Catalog Provider for Live Banners, Categories & Products
+/// Real-time Catalog Provider for Live Banners, Categories & Products strictly from backend
 class CatalogProvider extends ChangeNotifier {
   List<CategoryModel> _categories = [];
   List<ProductModel> _products = [];
   List<BannerModel> _banners = [];
-  bool _isLoading = false;
+  bool _isLoading = true;
   String? _error;
   String _searchQuery = '';
   int? _selectedCategoryId;
 
   CatalogProvider() {
-    // Initialize with dummy fallback first to avoid blank screen, then fetch live data
-    _categories = List.from(DummyData.categories);
-    _products = List.from(DummyData.products);
     fetchCatalog();
   }
 
@@ -79,15 +75,9 @@ class CatalogProvider extends ChangeNotifier {
       final liveProducts = results[1] as List<ProductModel>;
       final liveBanners = results[2] as List<BannerModel>;
 
-      if (liveCategories.isNotEmpty) {
-        _categories = liveCategories;
-      }
-      if (liveProducts.isNotEmpty) {
-        _products = liveProducts;
-      }
-      if (liveBanners.isNotEmpty) {
-        _banners = liveBanners;
-      }
+      _categories = liveCategories;
+      _products = liveProducts;
+      _banners = liveBanners;
     } catch (e) {
       _error = e.toString();
     } finally {

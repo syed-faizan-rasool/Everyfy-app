@@ -21,14 +21,15 @@ class CategoryChip extends StatelessWidget {
     return BouncingButton(
       onTap: onTap,
       child: SizedBox(
-        width: 78,
+        width: 76,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 66,
-              height: 66,
-              padding: const EdgeInsets.all(3),
+              width: 58,
+              height: 58,
+              padding: const EdgeInsets.all(2.5),
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primaryLight : Colors.white,
                 shape: BoxShape.circle,
@@ -39,7 +40,7 @@ class CategoryChip extends StatelessWidget {
                 boxShadow: [
                   BoxShadow(
                     color: isSelected
-                        ? AppColors.primary.withValues(alpha: 0.15)
+                        ? AppColors.primary.withValues(alpha: 0.16)
                         : AppColors.textPrimary.withValues(alpha: 0.04),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
@@ -51,31 +52,48 @@ class CategoryChip extends StatelessWidget {
                   imageUrl: category.image,
                   fit: BoxFit.cover,
                   placeholder: (_, __) => const ShimmerBox(
-                    width: 60,
-                    height: 60,
-                    borderRadius: 30,
+                    width: 54,
+                    height: 54,
+                    borderRadius: 27,
                   ),
                   errorWidget: (_, __, ___) => Container(
                     color: AppColors.primaryLight,
                     child: const Icon(
                       Icons.eco_rounded,
-                      size: 26,
+                      size: 24,
                       color: AppColors.primary,
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              category.name,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: isSelected ? AppColors.primary : AppColors.textPrimary,
+            const SizedBox(height: 5),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  category.name,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                    height: 1.15,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 3),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              width: isSelected ? 18 : 0,
+              height: 2.5,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : Colors.transparent,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
           ],

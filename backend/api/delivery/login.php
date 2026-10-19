@@ -2,7 +2,7 @@
 /**
  * Delivery Boy Login
  * POST /api/delivery/login.php
- * Body: { phone: "03019876543", password: "1234" }
+ * Body: { phone: "03019876543", password: "..." }
  */
 
 require_once __DIR__ . '/../../config/config.php';
@@ -30,30 +30,42 @@ try {
     $stmt->execute([$cleanPhone]);
     $rider = $stmt->fetch();
 
-    if ($rider && (password_verify($password, $rider['password']) || $password === '1234')) {
-        $token = AuthHelper::generateToken([
-            'sub'   => (int)$rider['id'],
-            'role'  => 'rider',
-            'phone' => $rider['phone'],
-            'name'  => $rider['name']
-        ]);
+    if ($rider) {
+        $storedPass = $rider['password'] ?? '';
+        $passValid = ($storedPass === $password) || (!empty($storedPass) && password_verify($password, $storedPass));
 
-        sendSuccess([
-            'token' => $token,
-            'rider' => [
-                'id'               => (int)$rider['id'],
-                'name'             => $rider['name'],
-                'phone'            => $rider['phone'],
-                'vehicle_type'     => $rider['vehicle_type'],
-                'vehicle_number'   => $rider['vehicle_number'],
-                'rating'           => (float)$rider['rating'],
-                'is_online'        => (bool)$rider['is_online'],
-                'total_deliveries' => (int)$rider['total_deliveries'],
-                'role'             => 'rider'
-            ]
-        ], 'Rider login successful');
+        if ($passValid) {
+            if ($storedPass === $password) {
+                $newHash = password_hash($password, PASSWORD_BCRYPT);
+                $pdo->prepare("UPDATE delivery_boys SET password = ? WHERE id = ?")->execute([$newHash, $rider['id']]);
+            }
+
+            $token = AuthHelper::generateToken([
+                'sub'   => (int)$rider['id'],
+                'role'  => 'rider',
+                'phone' => $rider['phone'],
+                'name'  => $rider['name']
+            ]);
+
+            sendSuccess([
+                'token' => $token,
+                'rider' => [
+                    'id'               => (int)$rider['id'],
+                    'name'             => $rider['name'],
+                    'phone'            => $rider['phone'],
+                    'vehicle_type'     => $rider['vehicle_type'] ?? 'Motorcycle',
+                    'vehicle_number'   => $rider['vehicle_number'] ?? '',
+                    'rating'           => (float)($rider['rating'] ?? 5.0),
+                    'is_online'        => (bool)($rider['is_online'] ?? 1),
+                    'total_deliveries' => (int)($rider['total_deliveries'] ?? 0),
+                    'role'             => 'rider'
+                ]
+            ], 'Rider login successful');
+        } else {
+            sendError('Invalid rider phone number or password', 401);
+        }
     } else {
-        sendError('Invalid rider phone or password (Default test pass: 1234)', 401);
+        sendError('Invalid rider phone number or password', 401);
     }
 } catch (PDOException $e) {
     sendError('Database error: ' . $e->getMessage(), 500);
