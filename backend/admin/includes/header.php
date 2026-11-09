@@ -19,6 +19,22 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 $adminName = $_SESSION['admin_name'] ?? 'Super Admin';
 $adminEmail = $_SESSION['admin_email'] ?? 'admin@everyfy.net';
 
+if (!function_exists('getAdminImageUrl')) {
+    function getAdminImageUrl($img) {
+        if (empty($img)) {
+            return 'https://placehold.co/200x200?text=No+Image';
+        }
+        $trimmed = trim($img);
+        if (preg_match('/^https?:\/\//i', $trimmed) || strpos($trimmed, 'data:image') === 0) {
+            return $trimmed;
+        }
+        if (strpos($trimmed, '/') === 0) {
+            return $trimmed;
+        }
+        return '../' . ltrim($trimmed, './');
+    }
+}
+
 $currentPage = basename($_SERVER['PHP_SELF']);
 ?>
 <!DOCTYPE html>

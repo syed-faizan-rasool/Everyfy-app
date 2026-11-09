@@ -66,23 +66,41 @@ class RoleSelectionScreen extends StatelessWidget {
 
               // Brand Logo Header
               Container(
-                width: 76,
-                height: 76,
+                width: 78,
+                height: 78,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [AppColors.primary, AppColors.primaryDark],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF136E44), AppColors.primary, AppColors.primaryDark],
                   ),
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.25),
-                      blurRadius: 16,
+                      color: AppColors.primary.withValues(alpha: 0.28),
+                      blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),
                   ],
                 ),
-                child: const Center(
-                  child: Icon(Icons.shopping_basket_rounded, size: 42, color: Colors.white),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Image.asset(
+                    'assets/images/app_logo.png',
+                    width: 78,
+                    height: 78,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppColors.primary, AppColors.primaryDark],
+                        ),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.shopping_basket_rounded, size: 42, color: Colors.white),
+                      ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),

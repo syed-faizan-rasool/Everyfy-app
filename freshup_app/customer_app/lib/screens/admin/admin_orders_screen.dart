@@ -347,11 +347,13 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                       style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
                     ),
                     Text(
-                      'Rs ${order.total.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        fontSize: 16,
+                      order.total > 0
+                          ? 'Rs ${order.total.toStringAsFixed(0)}'
+                          : 'As per Market Rate',
+                      style: TextStyle(
+                        fontSize: order.total > 0 ? 16 : 13,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFF0D5C3A),
+                        color: const Color(0xFF0D5C3A),
                       ),
                     ),
                   ],

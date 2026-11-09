@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
 import '../../providers/admin_provider.dart';
+import '../../providers/catalog_provider.dart';
+import '../../services/api_service.dart';
+import '../../widgets/app_network_image.dart';
 import 'admin_add_edit_product_screen.dart';
 
 class AdminInventoryScreen extends StatefulWidget {
@@ -248,16 +251,23 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
               // Product Image
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  product.image,
+                child: Container(
                   width: 64,
                   height: 64,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    width: 64,
-                    height: 64,
-                    color: const Color(0xFFF1F5F9),
-                    child: const Icon(Icons.shopping_bag_outlined, color: Colors.grey),
+                  color: const Color(0xFFF8FAFC),
+                  child: Center(
+                    child: AppNetworkImage(
+                      imageUrl: product.image,
+                      width: 64,
+                      height: 64,
+                      fit: BoxFit.contain,
+                      errorWidget: Container(
+                        width: 64,
+                        height: 64,
+                        color: const Color(0xFFF1F5F9),
+                        child: const Icon(Icons.shopping_bag_outlined, color: Colors.grey),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -328,11 +338,13 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                     Row(
                       children: [
                         Text(
-                          'Rs ${product.finalPrice.toStringAsFixed(0)}',
-                          style: const TextStyle(
-                            fontSize: 15,
+                          product.finalPrice > 0
+                              ? 'Rs ${product.finalPrice.toStringAsFixed(0)}'
+                              : 'As per Market Rate',
+                          style: TextStyle(
+                            fontSize: product.finalPrice > 0 ? 15 : 12,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFF0D5C3A),
+                            color: const Color(0xFF0D5C3A),
                           ),
                         ),
                         if (product.hasDiscount) ...[
@@ -478,6 +490,8 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
           ElevatedButton(
             onPressed: () {
               admin.deleteProduct(product.id);
+              context.read<CatalogProvider>().removeProduct(product.id);
+              ApiService.adminDeleteProduct(product.id);
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Removed ${product.name} from catalog')),

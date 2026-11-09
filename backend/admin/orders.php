@@ -54,7 +54,7 @@ $orders = [];
 $riders = [];
 if ($pdo) {
     try {
-        $stmt = $pdo->prepare("SELECT o.*, d.name as rider_name FROM orders o LEFT JOIN delivery_boys d ON d.id = o.delivery_boy_id {$whereClause} ORDER BY o.id DESC");
+        $stmt = $pdo->prepare("SELECT o.*, d.name as rider_name, d.phone as rider_phone FROM orders o LEFT JOIN delivery_boys d ON d.id = o.delivery_boy_id {$whereClause} ORDER BY o.id DESC");
         $stmt->execute($params);
         $orders = $stmt->fetchAll();
 
@@ -138,7 +138,11 @@ if ($pdo) {
                             </td>
                             <td>
                                 <div class="fw-semibold"><?= htmlspecialchars($o['customer_name'] ?: 'Guest') ?></div>
-                                <small class="text-muted"><?= htmlspecialchars($o['customer_phone'] ?: '') ?></small>
+                                <?php if (!empty($o['customer_phone'])): ?>
+                                    <a href="tel:<?= preg_replace('/[^0-9+]/', '', $o['customer_phone']) ?>" class="small text-muted text-decoration-none">
+                                        <i class="fa-solid fa-phone me-1 text-success"></i><?= htmlspecialchars($o['customer_phone']) ?>
+                                    </a>
+                                <?php endif; ?>
                             </td>
                             <td style="max-width: 220px;" class="small text-truncate" title="<?= htmlspecialchars($o['address_text']) ?>">
                                 <?= htmlspecialchars($o['address_text']) ?>
@@ -154,9 +158,16 @@ if ($pdo) {
                             </td>
                             <td>
                                 <?php if ($o['rider_name']): ?>
-                                    <span class="badge bg-success-subtle text-success py-1 px-2">
-                                        <i class="fa-solid fa-motorcycle me-1"></i><?= htmlspecialchars($o['rider_name']) ?>
-                                    </span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-success-subtle text-success py-1 px-2">
+                                            <i class="fa-solid fa-motorcycle me-1"></i><?= htmlspecialchars($o['rider_name']) ?>
+                                        </span>
+                                        <?php if (!empty($o['rider_phone'])): ?>
+                                            <a href="tel:<?= preg_replace('/[^0-9+]/', '', $o['rider_phone']) ?>" class="btn btn-sm btn-outline-success rounded-circle p-1" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;" title="Call Rider">
+                                                <i class="fa-solid fa-phone" style="font-size: 10px;"></i>
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
                                 <?php else: ?>
                                     <span class="badge bg-warning-subtle text-warning">Unassigned</span>
                                 <?php endif; ?>

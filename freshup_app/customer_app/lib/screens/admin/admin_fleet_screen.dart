@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/admin_model.dart';
 import '../../models/order_model.dart';
 import '../../providers/admin_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AdminFleetScreen extends StatelessWidget {
   const AdminFleetScreen({super.key});
@@ -182,10 +183,20 @@ class AdminFleetScreen extends StatelessWidget {
               ),
               const Spacer(),
               InkWell(
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Calling rider ${rider.name}...')),
-                  );
+                onTap: () async {
+                  final clean = rider.phone.replaceAll(RegExp(r'[^0-9+]'), '');
+                  if (clean.isNotEmpty) {
+                    final uri = Uri.parse('tel:$clean');
+                    try {
+                      await launchUrl(uri);
+                    } catch (_) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Calling ${rider.name}: ${rider.phone}')),
+                        );
+                      }
+                    }
+                  }
                 },
                 borderRadius: BorderRadius.circular(8),
                 child: Container(

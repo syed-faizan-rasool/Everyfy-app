@@ -6,11 +6,19 @@ import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/catalog_provider.dart';
 import 'providers/delivery_order_provider.dart';
+import 'providers/notification_provider.dart';
 import 'providers/order_provider.dart';
 import 'screens/splash_screen.dart';
+import 'services/device_notification_service.dart';
+import 'services/meta_analytics_service.dart';
 import 'utils/app_theme.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Initialize Real-time System Notification Service (Heads-Up Banner Channels)
+  await DeviceNotificationService.init();
+  // Initialize Meta (Facebook) App Events SDK
+  await MetaAnalyticsService.logActivateApp();
   runApp(const MyApp());
 }
 
@@ -28,6 +36,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => DeliveryOrderProvider()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: MaterialApp(
         title: 'Everyfy',

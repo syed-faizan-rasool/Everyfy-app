@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../providers/delivery_order_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/animated_widgets.dart';
@@ -16,16 +17,36 @@ class _RiderEarningsScreenState extends State<RiderEarningsScreen> {
   int _selectedPeriod = 0; // 0 = Today, 1 = This Week, 2 = This Month
 
   void _showWithdrawModal(BuildContext context, double balance) {
+    if (balance <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No withdrawable balance available yet. Complete deliveries to earn cash!'),
+          backgroundColor: AppColors.accent,
+        ),
+      );
+      return;
+    }
+
+    final provider = context.read<DeliveryOrderProvider>();
     String selectedMethod = 'Easypaisa';
+    final accountController = TextEditingController(text: provider.riderPhone);
+    final amountController = TextEditingController(text: balance.toStringAsFixed(0));
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) => Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,45 +68,86 @@ class _RiderEarningsScreenState extends State<RiderEarningsScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Available Balance: Rs ${balance.toStringAsFixed(0)}',
+                'Available to withdraw: Rs ${balance.toStringAsFixed(0)}',
                 style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700, fontSize: 14),
               ),
               const SizedBox(height: 18),
               const Text('Select Payout Method', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
               const SizedBox(height: 8),
-              for (final method in ['Easypaisa (0301-9876543)', 'JazzCash (0301-9876543)', 'Meezan Bank (PK44MEZN...)'])
+              for (final method in ['Easypaisa', 'JazzCash', 'Bank Transfer'])
                 InkWell(
-                  onTap: () => setModalState(() => selectedMethod = method.split(' ').first),
+                  onTap: () => setModalState(() => selectedMethod = method),
                   borderRadius: BorderRadius.circular(10),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                     child: Row(
                       children: [
                         Icon(
-                          selectedMethod == method.split(' ').first
+                          selectedMethod == method
                               ? Icons.radio_button_checked_rounded
                               : Icons.radio_button_off_rounded,
-                          color: selectedMethod == method.split(' ').first ? AppColors.primary : AppColors.textMuted,
+                          color: selectedMethod == method ? AppColors.primary : AppColors.textMuted,
                           size: 20,
                         ),
                         const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(method, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                        ),
+                        Text(method, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
                 ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: accountController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: '$selectedMethod Number / Account',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: amountController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Withdraw Amount (Rs)',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.payments_outlined),
+                ),
+              ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Withdrawal request of Rs ${balance.toStringAsFixed(0)} sent to $selectedMethod!'),
-                      backgroundColor: AppColors.success,
-                    ),
+                  final enteredAmount = double.tryParse(amountController.text.trim()) ?? 0.0;
+                  final enteredAccount = accountController.text.trim();
+                  if (enteredAccount.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter your account number.')),
+                    );
+                    return;
+                  }
+                  if (enteredAmount <= 0 || enteredAmount > balance) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Please enter an amount between Rs 1 and Rs ${balance.toStringAsFixed(0)}.')),
+                    );
+                    return;
+                  }
+
+                  final success = provider.requestWithdrawal(
+                    method: selectedMethod,
+                    accountNumber: enteredAccount,
+                    amount: enteredAmount,
                   );
+
+                  Navigator.pop(ctx);
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Cashout request of Rs ${enteredAmount.toStringAsFixed(0)} submitted successfully!'),
+                        backgroundColor: AppColors.success,
+                      ),
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
@@ -93,7 +155,6 @@ class _RiderEarningsScreenState extends State<RiderEarningsScreen> {
                 ),
                 child: const Text('Confirm Cashout'),
               ),
-              const SizedBox(height: 12),
             ],
           ),
         ),
@@ -105,27 +166,11 @@ class _RiderEarningsScreenState extends State<RiderEarningsScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<DeliveryOrderProvider>();
 
-    double displayedEarnings;
-    int displayedDeliveries;
-    double displayedDistance;
-    double tips;
-
-    if (_selectedPeriod == 0) {
-      displayedEarnings = provider.todayEarnings;
-      displayedDeliveries = provider.todayDeliveriesCount;
-      displayedDistance = provider.todayDistanceKm;
-      tips = 150.0;
-    } else if (_selectedPeriod == 1) {
-      displayedEarnings = provider.weeklyEarnings;
-      displayedDeliveries = provider.todayDeliveriesCount + 24;
-      displayedDistance = provider.todayDistanceKm + 88.5;
-      tips = 720.0;
-    } else {
-      displayedEarnings = provider.monthlyEarnings;
-      displayedDeliveries = provider.todayDeliveriesCount + 110;
-      displayedDistance = provider.todayDistanceKm + 360.0;
-      tips = 2400.0;
-    }
+    final displayedEarnings = provider.todayEarnings;
+    final displayedDeliveries = provider.todayDeliveriesCount;
+    final displayedDistance = provider.todayDistanceKm;
+    const tips = 0.0;
+    final availableBal = provider.availableBalance;
 
     final avgPerOrder = displayedDeliveries > 0 ? (displayedEarnings / displayedDeliveries) : 0.0;
 
@@ -175,7 +220,7 @@ class _RiderEarningsScreenState extends State<RiderEarningsScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Net Earnings',
+                    'Available Balance',
                     style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                   Container(
@@ -189,7 +234,7 @@ class _RiderEarningsScreenState extends State<RiderEarningsScreen> {
                         Icon(Icons.verified_rounded, size: 14, color: Colors.white),
                         SizedBox(width: 4),
                         Text(
-                          'Daily Payouts',
+                          'Instant Payout',
                           style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
                         ),
                       ],
@@ -199,7 +244,7 @@ class _RiderEarningsScreenState extends State<RiderEarningsScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Rs ${displayedEarnings.toStringAsFixed(0)}',
+                'Rs ${availableBal.toStringAsFixed(0)}',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 34,
@@ -207,12 +252,21 @@ class _RiderEarningsScreenState extends State<RiderEarningsScreen> {
                   letterSpacing: -0.5,
                 ),
               ),
+              const SizedBox(height: 6),
+              Text(
+                'Total Earned: Rs ${provider.todayEarnings.toStringAsFixed(0)} · Withdrawn: Rs ${provider.totalWithdrawn.toStringAsFixed(0)}',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               const SizedBox(height: 18),
               Row(
                 children: [
                   Expanded(
                     child: BouncingButton(
-                      onTap: () => _showWithdrawModal(context, displayedEarnings),
+                      onTap: () => _showWithdrawModal(context, availableBal),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
@@ -297,38 +351,52 @@ class _RiderEarningsScreenState extends State<RiderEarningsScreen> {
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.textPrimary),
         ),
         const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.cardBorder),
-          ),
-          child: Column(
-            children: [
-              _buildPayoutTile(
-                title: 'Transferred to Easypaisa',
-                subtitle: 'Yesterday · 0301-9876543',
-                amount: 'Rs 3,450',
-                status: 'Completed',
+        provider.withdrawals.isEmpty
+            ? Container(
+                padding: const EdgeInsets.all(24),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: const Column(
+                  children: [
+                    Icon(Icons.history_rounded, size: 36, color: AppColors.textMuted),
+                    SizedBox(height: 10),
+                    Text(
+                      'No payout requests yet',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textSecondary),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'When you cash out your earnings, they will appear here.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+              )
+            : Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: Column(
+                  children: [
+                    for (int i = 0; i < provider.withdrawals.length; i++) ...[
+                      if (i > 0) const Divider(indent: 56, color: AppColors.divider),
+                      _buildPayoutTile(
+                        title: 'Transferred via ${provider.withdrawals[i].method}',
+                        subtitle: '${DateFormat('MMM d, h:mm a').format(provider.withdrawals[i].date)} · ${provider.withdrawals[i].accountNumber}',
+                        amount: 'Rs ${provider.withdrawals[i].amount.toStringAsFixed(0)}',
+                        status: provider.withdrawals[i].status,
+                      ),
+                    ],
+                  ],
+                ),
               ),
-              const Divider(indent: 56, color: AppColors.divider),
-              _buildPayoutTile(
-                title: 'Transferred to JazzCash',
-                subtitle: 'Aug 26, 2026 · Auto Payout',
-                amount: 'Rs 5,120',
-                status: 'Completed',
-              ),
-              const Divider(indent: 56, color: AppColors.divider),
-              _buildPayoutTile(
-                title: 'Weekly Incentive Bonus',
-                subtitle: 'Aug 23, 2026 · 100% on-time delivery',
-                amount: 'Rs 1,000',
-                status: 'Bonus Paid',
-                isBonus: true,
-              ),
-            ],
-          ),
-        ),
         const SizedBox(height: 24),
       ],
     );

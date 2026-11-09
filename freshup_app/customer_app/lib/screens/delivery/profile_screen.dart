@@ -1,5 +1,9 @@
+import 'dart:io';
+import '../../widgets/image_picker_helper.dart';
+import '../../widgets/app_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/app_role_provider.dart';
 import '../../providers/delivery_order_provider.dart';
 import '../../utils/app_colors.dart';
@@ -17,7 +21,7 @@ class RiderProfileScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Rider Logout', style: TextStyle(fontWeight: FontWeight.w800)),
-        content: const Text('Are you sure you want to end your shift and return to role selection?'),
+        content: const Text('Are you sure you want to end your shift and log out?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -71,15 +75,48 @@ class RiderProfileScreen extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2),
+                  GestureDetector(
+                    onTap: () {
+                      ImagePickerHelper.showImageSourceSheet(
+                        context: context,
+                        folder: 'riders',
+                        onImageSelected: (file, url) {
+                          provider.updateRiderAvatar(url ?? file.path);
+                        },
+                      );
+                    },
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 68,
+                          height: 68,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: provider.riderAvatar.isNotEmpty
+                              ? (provider.riderAvatar.startsWith('http') || provider.riderAvatar.startsWith('uploads/')
+                                  ? AppNetworkImage(imageUrl: provider.riderAvatar, width: 68, height: 68, fit: BoxFit.cover)
+                                  : Image.file(File(provider.riderAvatar), width: 68, height: 68, fit: BoxFit.cover))
+                              : const Icon(Icons.two_wheeler_rounded, color: Colors.white, size: 36),
+                        ),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1.5),
+                            ),
+                            child: const Icon(Icons.camera_alt_rounded, size: 12, color: Colors.white),
+                          ),
+                        ),
+                      ],
                     ),
-                    child: const Icon(Icons.two_wheeler_rounded, color: Colors.white, size: 36),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -266,7 +303,7 @@ class RiderProfileScreen extends StatelessWidget {
               _buildRiderMenuTile(
                 icon: Icons.map_outlined,
                 iconColor: const Color(0xFF06B6D4),
-                label: 'Delivery Zone (Lahore Central)',
+                label: 'Delivery Zone (Gojra City)',
                 onTap: () {},
               ),
               const Divider(indent: 52, color: AppColors.divider),
@@ -274,10 +311,19 @@ class RiderProfileScreen extends StatelessWidget {
                 icon: Icons.headset_mic_outlined,
                 iconColor: const Color(0xFF8B5CF6),
                 label: '24/7 Rider Emergency Helpline',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Rider helpline: 042-111-373-748')),
-                  );
+                badgeText: 'Call',
+                badgeColor: AppColors.primary,
+                onTap: () async {
+                  final uri = Uri.parse('tel:042111373748');
+                  try {
+                    await launchUrl(uri);
+                  } catch (_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Helpline: 042-111-373-748')),
+                      );
+                    }
+                  }
                 },
               ),
               const Divider(indent: 52, color: AppColors.divider),
@@ -309,7 +355,7 @@ class RiderProfileScreen extends StatelessWidget {
                 Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
                 SizedBox(width: 8),
                 Text(
-                  'End Shift & Switch Role',
+                  'End Shift & Log Out',
                   style: TextStyle(
                     color: AppColors.error,
                     fontWeight: FontWeight.w700,

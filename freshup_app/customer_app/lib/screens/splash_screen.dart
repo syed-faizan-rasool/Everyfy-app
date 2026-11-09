@@ -26,19 +26,24 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1000),
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-          parent: _controller,
-          curve: const Interval(0.0, 0.7, curve: Curves.easeIn)),
+        parent: _controller,
+        curve: const Interval(0.0, 0.75, curve: Curves.easeIn),
+      ),
     );
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    _scaleAnimation = Tween<double>(begin: 0.82, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutBack,
+      ),
     );
 
     _controller.forward();
-    Future.delayed(const Duration(milliseconds: 2000), _navigate);
+    // Cohesive 3-second green branded splash experience
+    Future.delayed(const Duration(milliseconds: 3000), _navigate);
   }
 
   @override
@@ -52,7 +57,7 @@ class _SplashScreenState extends State<SplashScreen>
     final auth = context.read<AuthProvider>();
     final roleProv = context.read<AppRoleProvider>();
 
-    // Restore persistent session if valid (< 7 days)
+    // Restore persistent session if valid
     await auth.checkSavedSession();
 
     if (!mounted) return;
@@ -94,24 +99,25 @@ class _SplashScreenState extends State<SplashScreen>
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              AppColors.primary,
-              AppColors.primaryDark,
+              Color(0xFF136E44), // Lush Everyfy Green
+              Color(0xFF0D5C3A),
+              Color(0xFF073722), // Deep Emerald
             ],
           ),
         ),
         child: SafeArea(
           child: Stack(
             children: [
-              // Ambient background circles
+              // Ambient soft glow shapes
               Positioned(
-                top: -60,
-                right: -60,
+                top: -50,
+                right: -50,
                 child: Container(
-                  width: 200,
-                  height: 200,
+                  width: 220,
+                  height: 220,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white.withValues(alpha: 0.05),
@@ -119,8 +125,8 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
               Positioned(
-                bottom: -80,
-                left: -80,
+                bottom: -60,
+                left: -60,
                 child: Container(
                   width: 240,
                   height: 240,
@@ -131,7 +137,7 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
 
-              // Animated Center Content
+              // Animated Center Content with Everyfy Logo
               Center(
                 child: AnimatedBuilder(
                   animation: _controller,
@@ -143,61 +149,88 @@ class _SplashScreenState extends State<SplashScreen>
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            // App Logo with glowing elevated shadow
                             Container(
-                              width: 110,
-                              height: 110,
+                              width: 114,
+                              height: 114,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(28),
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(30),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.25),
-                                    blurRadius: 24,
+                                    color: Colors.black.withValues(alpha: 0.22),
+                                    blurRadius: 26,
                                     offset: const Offset(0, 10),
+                                  ),
+                                  BoxShadow(
+                                    color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                                    blurRadius: 34,
+                                    offset: const Offset(0, 6),
                                   ),
                                 ],
                               ),
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(28),
+                                borderRadius: BorderRadius.circular(30),
                                 child: Image.asset(
                                   'assets/images/app_logo.png',
-                                  width: 110,
-                                  height: 110,
+                                  width: 114,
+                                  height: 114,
                                   fit: BoxFit.cover,
                                   errorBuilder: (_, __, ___) => Container(
-                                    color: Colors.white,
+                                    decoration: const BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [Color(0xFF136E44), AppColors.primary],
+                                      ),
+                                    ),
                                     child: const Center(
-                                      child: Icon(Icons.shopping_basket_rounded, size: 60, color: AppColors.primary),
+                                      child: Icon(Icons.shopping_basket_rounded, size: 60, color: Colors.white),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 22),
+                            const SizedBox(height: 24),
+
+                            // Brand Name
                             const Text(
                               'Everyfy',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 36,
                                 fontWeight: FontWeight.w900,
-                                letterSpacing: -0.5,
+                                letterSpacing: -0.6,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 10),
+
+                            // Tagline Pill
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 6),
+                                  horizontal: 16, vertical: 7),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.14),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Text(
-                                'Fresh Groceries Delivered in Minutes',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.2,
+                                color: Colors.white.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(22),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.25),
+                                  width: 1,
                                 ),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.bolt_rounded,
+                                      size: 16, color: Colors.white),
+                                  SizedBox(width: 5),
+                                  Text(
+                                    'Fresh Groceries Delivered in 15 Mins',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -208,21 +241,34 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
 
-              // Bottom Indicator
+              // Bottom Loader & Footer
               Positioned(
-                bottom: 32,
+                bottom: 30,
                 left: 0,
                 right: 0,
-                child: Center(
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white.withValues(alpha: 0.8)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white.withValues(alpha: 0.85)),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Fast · Fresh · Reliable',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.72),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

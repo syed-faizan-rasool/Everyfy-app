@@ -37,6 +37,8 @@ class OrderProvider extends ChangeNotifier {
     String orderType = 'delivery',
     String? notes,
     String? couponCode,
+    String? customerName,
+    String? customerPhone,
   }) {
     final generatedNumber = 'ORD-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
     final order = OrderModel(
@@ -66,6 +68,8 @@ class OrderProvider extends ChangeNotifier {
       addressText: addressText,
       notes: notes,
       couponCode: couponCode,
+      customerName: customerName,
+      customerPhone: customerPhone,
     ).then((res) {
       if (res['success'] == true && res['data'] != null) {
         // Updated with official server-issued order number

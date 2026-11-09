@@ -18,7 +18,7 @@ $categoryId = isset($_GET['category_id']) && is_numeric($_GET['category_id']) ? 
 $search     = isset($_GET['search']) ? trim($_GET['search']) : '';
 $featured   = isset($_GET['featured']) ? (int)$_GET['featured'] : null;
 $page       = isset($_GET['page']) && (int)$_GET['page'] > 0 ? (int)$_GET['page'] : 1;
-$limit      = isset($_GET['limit']) && (int)$_GET['limit'] > 0 ? (int)$_GET['limit'] : 100;
+$limit      = isset($_GET['limit']) && (int)$_GET['limit'] > 0 ? min((int)$_GET['limit'], 2000) : 1000;
 $offset     = ($page - 1) * $limit;
 
 try {

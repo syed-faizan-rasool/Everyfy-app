@@ -37,31 +37,34 @@ class _RiderMainNavigationScreenState extends State<RiderMainNavigationScreen> {
             ),
           ],
         ),
-        child: NavigationBar(
-          selectedIndex: _navIndex,
-          onDestinationSelected: (i) => setState(() => _navIndex = i),
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.moped_outlined),
-              selectedIcon: Icon(Icons.moped_rounded),
-              label: 'Deliveries',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.receipt_long_outlined),
-              selectedIcon: Icon(Icons.receipt_long_rounded),
-              label: 'History',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.account_balance_wallet_outlined),
-              selectedIcon: Icon(Icons.account_balance_wallet_rounded),
-              label: 'Earnings',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline_rounded),
-              selectedIcon: Icon(Icons.person_rounded),
-              label: 'Profile',
-            ),
-          ],
+        child: SafeArea(
+          top: false,
+          child: NavigationBar(
+            selectedIndex: _navIndex,
+            onDestinationSelected: (i) => setState(() => _navIndex = i),
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.moped_outlined),
+                selectedIcon: Icon(Icons.moped_rounded),
+                label: 'Deliveries',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.receipt_long_outlined),
+                selectedIcon: Icon(Icons.receipt_long_rounded),
+                label: 'History',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.account_balance_wallet_outlined),
+                selectedIcon: Icon(Icons.account_balance_wallet_rounded),
+                label: 'Earnings',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline_rounded),
+                selectedIcon: Icon(Icons.person_rounded),
+                label: 'Profile',
+              ),
+            ],
+          ),
         ),
       ),
     );

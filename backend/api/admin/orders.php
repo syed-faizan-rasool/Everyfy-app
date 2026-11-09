@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/response.php';
 require_once __DIR__ . '/../../helpers/auth.php';
+require_once __DIR__ . '/../../helpers/notification_helper.php';
 
 $pdo = Database::getConnection();
 if (!$pdo) {
@@ -95,8 +96,23 @@ try {
         $params  = [];
 
         if ($status !== null) {
+            $statusMap = [
+                'ontheway'   => 'on_the_way',
+                'on_the_way' => 'on_the_way',
+                'pickedup'   => 'picked_up',
+                'picked_up'  => 'picked_up',
+                'placed'     => 'placed',
+                'confirmed'  => 'confirmed',
+                'preparing'  => 'preparing',
+                'ready'      => 'ready',
+                'delivered'  => 'delivered',
+                'cancelled'  => 'cancelled',
+            ];
+            $cleanKey = strtolower(str_replace(['-', ' ', '_'], '', $status));
+            $normStatus = $statusMap[$cleanKey] ?? $status;
             $updates[] = "order_status = ?";
-            $params[] = $status;
+            $params[]  = $normStatus;
+            $status    = $normStatus;
         }
 
         if ($deliveryBoyId !== null) {
@@ -113,9 +129,58 @@ try {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
 
+        // Fetch order details for notifications
+        $ordInfoStmt = $pdo->prepare("SELECT order_number, user_id FROM orders WHERE id = ?");
+        $ordInfoStmt->execute([$orderId]);
+        $ordInfo = $ordInfoStmt->fetch();
+        $orderNumber = $ordInfo['order_number'] ?? "ORD-$orderId";
+        $orderUserId = $ordInfo['user_id'] ? (int)$ordInfo['user_id'] : null;
+
+        if ($deliveryBoyId !== null && $deliveryBoyId > 0) {
+            NotificationHelper::create(
+                $pdo,
+                'rider',
+                'New Delivery Assigned! 🛵',
+                "Order #{$orderNumber} has been assigned to you. Open your active orders to accept and pickup.",
+                $deliveryBoyId,
+                $orderId,
+                $orderNumber
+            );
+
+            NotificationHelper::create(
+                $pdo,
+                'customer',
+                'Rider Assigned! 🛵',
+                "A rider has been assigned to your order #{$orderNumber} and is heading to the store.",
+                $orderUserId,
+                $orderId,
+                $orderNumber
+            );
+        }
+
         if ($status !== null) {
             $pdo->prepare("INSERT INTO order_status_history (order_id, status, notes, changed_by) VALUES (?, ?, ?, 'admin')")
                 ->execute([$orderId, $status, $notes]);
+
+            $statusLabels = [
+                'confirmed' => 'Order Confirmed ✅',
+                'preparing' => 'Preparing Order 🍲',
+                'ready'     => 'Order Ready for Pickup 📦',
+                'on_the_way'=> 'Order Out for Delivery 🛵',
+                'delivered' => 'Order Delivered 🎉',
+                'cancelled' => 'Order Cancelled ❌',
+            ];
+            $label = $statusLabels[$status] ?? "Order status: $status";
+
+            NotificationHelper::create(
+                $pdo,
+                'customer',
+                $label,
+                "Your order #{$orderNumber} is now: {$status}.",
+                $orderUserId,
+                $orderId,
+                $orderNumber
+            );
         }
 
         sendSuccess(['order_id' => $orderId, 'status' => $status], 'Order updated successfully');

@@ -32,7 +32,7 @@ class AddressModel {
       label: json['label'] ?? 'Home',
       addressLine: json['address_line'] ?? json['addressLine'] ?? '',
       area: json['area'] ?? '',
-      city: json['city'] ?? 'Lahore',
+      city: json['city'] ?? 'Gojra',
       isDefault: json['is_default'] == 1 || json['is_default'] == true || json['isDefault'] == true,
     );
   }

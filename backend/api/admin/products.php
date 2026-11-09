@@ -62,8 +62,14 @@ try {
             }
         }
 
-        if (empty($name) || $price <= 0) {
+        if (empty($name) || $price < 0) {
             sendError('Product name and valid price are required', 422);
+        }
+
+        if (empty($image) && $id > 0) {
+            $existing = $pdo->prepare("SELECT image FROM products WHERE id = ?");
+            $existing->execute([$id]);
+            $image = $existing->fetchColumn() ?: '';
         }
 
         if (empty($image)) {

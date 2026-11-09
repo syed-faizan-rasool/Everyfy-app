@@ -132,14 +132,14 @@ class AdminSettingsScreen extends StatelessWidget {
                   ),
                   const Divider(height: 1, color: Color(0xFFF1F5F9)),
                   ListTile(
-                    title: const Text('Operating Hours', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                    leading: const Icon(Icons.timer_outlined, color: Color(0xFF0D5C3A)),
+                    title: const Text('Operating Hours (Timer)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                     subtitle: Text(settings.openingHours, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
                     trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF94A3B8)),
-                    onTap: () => _editStringSetting(
+                    onTap: () => _editOperatingHoursWithTimer(
                       context,
-                      'Operating Hours',
+                      admin,
                       settings.openingHours,
-                      (val) => admin.updateSettings(settings.copyWith(openingHours: val)),
                     ),
                   ),
                 ],
@@ -317,30 +317,156 @@ class AdminSettingsScreen extends StatelessWidget {
     );
   }
 
-  void _editStringSetting(BuildContext context, String title, String currentVal, Function(String) onSave) {
-    final controller = TextEditingController(text: currentVal);
-    showDialog(
+  void _editOperatingHoursWithTimer(BuildContext context, AdminProvider admin, String currentHours) {
+    TimeOfDay openTime = const TimeOfDay(hour: 8, minute: 0);
+    TimeOfDay closeTime = const TimeOfDay(hour: 23, minute: 0);
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                onSave(controller.text.trim());
-                Navigator.pop(ctx);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D5C3A)),
-            child: const Text('Save'),
-          ),
-        ],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            String formatTime(TimeOfDay t) {
+              final h = t.hourOfPeriod == 0 ? 12 : t.hourOfPeriod;
+              final m = t.minute.toString().padLeft(2, '0');
+              final p = t.period == DayPeriod.am ? 'AM' : 'PM';
+              return '$h:$m $p';
+            }
+
+            return Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDCFCE7),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.timer_outlined, color: Color(0xFF0D5C3A)),
+                      ),
+                      const SizedBox(width: 12),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Select Operating Hours', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                          Text('Pick store opening & closing timer', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: openTime,
+                            );
+                            if (picked != null) {
+                              setModalState(() => openTime = picked);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Opening Timer', style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.wb_sunny_outlined, size: 16, color: Color(0xFFD97706)),
+                                    const SizedBox(width: 6),
+                                    Text(formatTime(openTime), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: closeTime,
+                            );
+                            if (picked != null) {
+                              setModalState(() => closeTime = picked);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Closing Timer', style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.nightlight_round_outlined, size: 16, color: Color(0xFF6366F1)),
+                                    const SizedBox(width: 6),
+                                    Text(formatTime(closeTime), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final formatted = '${formatTime(openTime)} - ${formatTime(closeTime)}';
+                        admin.updateSettings(admin.settings.copyWith(openingHours: formatted));
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Operating timer set to $formatted')),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0D5C3A),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: const Text('Save Operating Timer', style: TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

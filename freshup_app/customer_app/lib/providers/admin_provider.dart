@@ -1,7 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../data/dummy_data.dart';
 import '../models/admin_model.dart';
-import '../models/cart_item_model.dart';
 import '../models/category_model.dart';
 import '../models/order_model.dart';
 import '../models/product_model.dart';
@@ -11,199 +9,31 @@ class AdminProvider extends ChangeNotifier {
   bool _isLoggedIn = false;
   AdminUserModel _adminUser = const AdminUserModel(
     id: 'ADM-01',
-    name: 'Syed Faizan Rasool',
-    email: 'syedfaizanrasool4@gmail.com',
+    name: 'Store Admin',
+    email: 'admin@everyfy.net',
     role: 'super_admin',
-    phone: '03051571113',
+    phone: '',
   );
 
   StoreSettingsModel _settings = StoreSettingsModel();
 
-  late List<ProductModel> _products;
-  late List<CategoryModel> _categories;
-  late List<AdminOrderModel> _orders;
-  late List<RiderFleetMemberModel> _fleet;
-  late List<CouponModel> _coupons;
+  List<ProductModel> _products = [];
+  List<CategoryModel> _categories = [];
+  List<AdminOrderModel> _orders = [];
+  List<RiderFleetMemberModel> _fleet = [];
+  List<CouponModel> _coupons = [];
 
   AdminProvider() {
     _initData();
   }
 
   void _initData() {
-    // Load mutable clone of products from DummyData
-    _products = List<ProductModel>.from(DummyData.products);
-    _categories = List<CategoryModel>.from(DummyData.categories);
+    _products = [];
+    _categories = [];
+    _fleet = [];
+    _orders = [];
+    _coupons = [];
     fetchLiveFromBackend();
-
-    // Initial Riders Fleet
-    _fleet = [
-      RiderFleetMemberModel(
-        id: 'RID-101',
-        name: 'Ahmed Khan',
-        phone: '03019876543',
-        vehicle: 'Honda CD70 · LEB-4921',
-        rating: 4.9,
-        completedToday: 6,
-        earningsToday: 980,
-        status: FleetDutyStatus.onDelivery,
-        currentOrderId: 'ORD-9821',
-      ),
-      RiderFleetMemberModel(
-        id: 'RID-102',
-        name: 'Bilal Hassan',
-        phone: '03214567890',
-        vehicle: 'Yamaha YBR · LEK-8812',
-        rating: 4.8,
-        completedToday: 4,
-        earningsToday: 620,
-        status: FleetDutyStatus.available,
-      ),
-      RiderFleetMemberModel(
-        id: 'RID-103',
-        name: 'Hamza Ali',
-        phone: '03337766554',
-        vehicle: 'Road Prince 70 · LEM-3104',
-        rating: 4.7,
-        completedToday: 5,
-        earningsToday: 790,
-        status: FleetDutyStatus.available,
-      ),
-      RiderFleetMemberModel(
-        id: 'RID-104',
-        name: 'Zain Malik',
-        phone: '03451122334',
-        vehicle: 'United 70 · LEJ-5590',
-        rating: 4.6,
-        completedToday: 2,
-        earningsToday: 320,
-        status: FleetDutyStatus.offline,
-      ),
-    ];
-
-    // Initial Admin Orders Pipeline
-    _orders = [
-      AdminOrderModel(
-        id: 'ORD-9821',
-        orderNumber: 'ORD-9821',
-        customerName: 'Fatima Zahra',
-        customerPhone: '03004455667',
-        address: 'House 42, Street 6, Sector Y, Phase 3, DHA, Lahore',
-        items: [
-          CartItemModel(product: _products[0], quantity: 2), // Apples
-          CartItemModel(product: _products[4], quantity: 3), // Milk
-          CartItemModel(product: _products[6], quantity: 1), // Bread
-        ],
-        subtotal: 1408,
-        deliveryFee: 150,
-        discount: 0,
-        total: 1558,
-        paymentMethod: 'Cash on Delivery',
-        createdAt: DateTime.now().subtract(const Duration(minutes: 18)),
-        status: OrderStatus.onTheWay,
-        assignedRiderId: 'RID-101',
-        assignedRiderName: 'Ahmed Khan',
-        assignedRiderPhone: '03019876543',
-        customerNotes: 'Ring bell twice upon arrival',
-      ),
-      AdminOrderModel(
-        id: 'ORD-9822',
-        orderNumber: 'ORD-9822',
-        customerName: 'Ali Raza',
-        customerPhone: '03217891234',
-        address: 'Apartment 4B, Gulberg Heights, Block G, Gulberg II, Lahore',
-        items: [
-          CartItemModel(product: _products[1], quantity: 2), // Bananas
-          CartItemModel(product: _products[2], quantity: 1), // Tomatoes
-          CartItemModel(product: _products[7], quantity: 2), // Orange Juice
-        ],
-        subtotal: 960,
-        deliveryFee: 120,
-        discount: 100,
-        total: 980,
-        paymentMethod: 'Paid Online (Debit Card)',
-        createdAt: DateTime.now().subtract(const Duration(minutes: 28)),
-        status: OrderStatus.ready,
-        customerNotes: 'Leave at reception with Mr. Aslam',
-      ),
-      AdminOrderModel(
-        id: 'ORD-9823',
-        orderNumber: 'ORD-9823',
-        customerName: 'Sarah Sheikh',
-        customerPhone: '03123456789',
-        address: 'House 112, Street 4, Sector F, DHA Phase 5, Lahore',
-        items: [
-          CartItemModel(product: _products[4], quantity: 4), // Olpers Milk
-          CartItemModel(product: _products[5], quantity: 2), // Farm Eggs
-        ],
-        subtotal: 1680,
-        deliveryFee: 150,
-        discount: 0,
-        total: 1830,
-        paymentMethod: 'Cash on Delivery',
-        createdAt: DateTime.now().subtract(const Duration(minutes: 8)),
-        status: OrderStatus.preparing,
-        customerNotes: 'Please check eggs are completely intact',
-      ),
-      AdminOrderModel(
-        id: 'ORD-9824',
-        orderNumber: 'ORD-9824',
-        customerName: 'Kamran Akmal',
-        customerPhone: '03028899001',
-        address: 'Plot 77, Commercial Area, Cavalry Ground, Lahore',
-        items: [
-          CartItemModel(product: _products[0], quantity: 1),
-          CartItemModel(product: _products[3], quantity: 2),
-        ],
-        subtotal: 599,
-        deliveryFee: 100,
-        discount: 50,
-        total: 649,
-        paymentMethod: 'Cash on Delivery',
-        createdAt: DateTime.now().subtract(const Duration(minutes: 3)),
-        status: OrderStatus.placed, // Newly placed!
-        customerNotes: 'Call before coming',
-      ),
-      AdminOrderModel(
-        id: 'ORD-9820',
-        orderNumber: 'ORD-9820',
-        customerName: 'Ayesha Siddiqui',
-        customerPhone: '03345566778',
-        address: 'House 19, Main Road, Garden Town, Lahore',
-        items: [
-          CartItemModel(product: _products[2], quantity: 2),
-          CartItemModel(product: _products[6], quantity: 1),
-        ],
-        subtotal: 440,
-        deliveryFee: 120,
-        discount: 0,
-        total: 560,
-        paymentMethod: 'Cash on Delivery',
-        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-        status: OrderStatus.delivered,
-        assignedRiderId: 'RID-102',
-        assignedRiderName: 'Bilal Hassan',
-      ),
-    ];
-
-    // Coupons
-    _coupons = [
-      CouponModel(
-        id: 'CPN-1',
-        code: 'FRESH50',
-        discountPercent: 15,
-        maxDiscount: 200,
-        minOrderValue: 1000,
-        expiryDate: DateTime.now().add(const Duration(days: 14)),
-      ),
-      CouponModel(
-        id: 'CPN-2',
-        code: 'WELCOME100',
-        discountPercent: 20,
-        maxDiscount: 300,
-        minOrderValue: 1200,
-        expiryDate: DateTime.now().add(const Duration(days: 30)),
-      ),
-    ];
   }
 
   // Getters
@@ -217,21 +47,34 @@ class AdminProvider extends ChangeNotifier {
   List<CouponModel> get coupons => List.unmodifiable(_coupons);
 
   // Authentication
-  bool login(String email, String password, {String? name, String? phone, String? role}) {
+  Future<bool> login(String identifier, String password, {String? name, String? phone, String? role, String? id}) async {
     _isLoggedIn = true;
     _adminUser = AdminUserModel(
-      id: 'ADM-01',
-      name: name ?? (email.contains('faizan') ? 'Syed Faizan Rasool' : 'Store Admin'),
-      email: email,
+      id: id ?? 'ADM-01',
+      name: (name != null && name.isNotEmpty)
+          ? name
+          : (identifier.isNotEmpty ? identifier.split('@').first : 'Store Admin'),
+      email: identifier.contains('@') ? identifier : 'admin@everyfy.net',
       role: role ?? 'super_admin',
-      phone: phone ?? '03051571113',
+      phone: phone ?? (!identifier.contains('@') ? identifier : ''),
     );
+    try {
+      await ApiService.login(
+        identifier: identifier,
+        password: password,
+        role: 'admin',
+      );
+    } catch (_) {}
+    await fetchLiveFromBackend();
     notifyListeners();
     return true;
   }
 
   void logout() {
     _isLoggedIn = false;
+    _orders = [];
+    _fleet = [];
+    ApiService.setAuthToken(null);
     notifyListeners();
   }
 
@@ -303,6 +146,7 @@ class AdminProvider extends ChangeNotifier {
         discountPrice: p.discountPrice,
         unit: p.unit,
         stockQty: newQty,
+        sizes: p.sizes,
       );
       notifyListeners();
     }
@@ -323,6 +167,7 @@ class AdminProvider extends ChangeNotifier {
         discountPrice: p.discountPrice,
         unit: p.unit,
         stockQty: newQty,
+        sizes: p.sizes,
       );
       notifyListeners();
     }
@@ -348,6 +193,10 @@ class AdminProvider extends ChangeNotifier {
     if (index != -1) {
       _orders[index] = _orders[index].copyWith(status: newStatus);
       notifyListeners();
+      ApiService.updateAdminOrderStatus(
+        orderId: orderId,
+        status: newStatus.toDbString,
+      );
     }
   }
 
@@ -370,6 +219,11 @@ class AdminProvider extends ChangeNotifier {
       );
 
       notifyListeners();
+      ApiService.updateAdminOrderStatus(
+        orderId: orderId,
+        status: OrderStatus.onTheWay.toDbString,
+        riderId: int.tryParse(riderId),
+      );
     }
   }
 
@@ -381,6 +235,11 @@ class AdminProvider extends ChangeNotifier {
         customerNotes: 'Cancelled by Store: $reason',
       );
       notifyListeners();
+      ApiService.updateAdminOrderStatus(
+        orderId: orderId,
+        status: 'cancelled',
+        notes: 'Cancelled by Store: $reason',
+      );
     }
   }
 
@@ -414,14 +273,22 @@ class AdminProvider extends ChangeNotifier {
   /// Live sync from Everyfy Hostinger backend
   Future<void> fetchLiveFromBackend() async {
     try {
-      final pList = await ApiService.getProducts();
-      final cList = await ApiService.getCategories();
-      if (pList.isNotEmpty) {
-        _products = List<ProductModel>.from(pList);
-      }
-      if (cList.isNotEmpty) {
-        _categories = List<CategoryModel>.from(cList);
-      }
+      final results = await Future.wait([
+        ApiService.getProducts(),
+        ApiService.getCategories(),
+        ApiService.getAdminOrdersList(),
+        ApiService.getAdminRidersList(),
+      ]);
+
+      final pList = results[0] as List<ProductModel>;
+      final cList = results[1] as List<CategoryModel>;
+      final oList = results[2] as List<AdminOrderModel>;
+      final rList = results[3] as List<RiderFleetMemberModel>;
+
+      _products = List<ProductModel>.from(pList);
+      _categories = List<CategoryModel>.from(cList)..sort(CategoryModel.compareByPreferredOrder);
+      _orders = List<AdminOrderModel>.from(oList);
+      _fleet = List<RiderFleetMemberModel>.from(rList);
       notifyListeners();
     } catch (_) {}
   }

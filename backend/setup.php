@@ -11,7 +11,7 @@ $message = '';
 $messageType = '';
 $step = 'check';
 
-// Handle Form Submission
+// Handle Form Submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
@@ -64,13 +64,108 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 try {
                     $sql = file_get_contents($sqlFile);
                     $pdo->exec($sql);
-                    $message = 'All database tables and demo seed data imported successfully!';
+
+                    // Ensure delivery_boys has email column
+                    try {
+                        $pdo->exec("ALTER TABLE delivery_boys ADD COLUMN email VARCHAR(120) NULL UNIQUE AFTER phone;");
+                    } catch (Exception $e) {}
+
+                    // If custom admin credentials provided during installation
+                    $adminEmail = trim($_POST['admin_email'] ?? '');
+                    $adminPass  = trim($_POST['admin_pass'] ?? '');
+                    $adminName  = trim($_POST['admin_name'] ?? 'Super Admin');
+
+                    if (!empty($adminEmail) && !empty($adminPass)) {
+                        $hash = password_hash($adminPass, PASSWORD_BCRYPT);
+                        $stmt = $pdo->prepare("UPDATE admins SET name = ?, email = ?, password = ? WHERE id = 1");
+                        $stmt->execute([$adminName, $adminEmail, $hash]);
+                    }
+
+                    // Import scanned live catalog seed if present
+                    $seedFile = __DIR__ . '/database/everyfy_catalog_seed.sql';
+                    if (file_exists($seedFile)) {
+                        try {
+                            $seedSql = file_get_contents($seedFile);
+                            $pdo->exec($seedSql);
+                        } catch (Exception $e) {}
+                    }
+
+                    $message = 'Clean database tables and live scanned catalog imported successfully!';
                     $messageType = 'success';
                     $step = 'complete';
                 } catch (PDOException $e) {
                     $message = 'Import failed: ' . htmlspecialchars($e->getMessage());
                     $messageType = 'danger';
                 }
+            }
+        }
+    } elseif ($action === 'seed_scanned_catalog') {
+        $pdo = Database::getConnection();
+        $seedFile = __DIR__ . '/database/everyfy_catalog_seed.sql';
+        if ($pdo && file_exists($seedFile)) {
+            try {
+                $seedSql = file_get_contents($seedFile);
+                $pdo->exec($seedSql);
+                $message = 'Successfully synchronized 16 live categories and 189 scanned products into the database!';
+                $messageType = 'success';
+            } catch (PDOException $e) {
+                $message = 'Catalog seed failed: ' . htmlspecialchars($e->getMessage());
+                $messageType = 'danger';
+            }
+        }
+    } elseif ($action === 'wipe_dummy_data') {
+        $pdo = Database::getConnection();
+        if ($pdo) {
+            try {
+                $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+                $pdo->exec("TRUNCATE TABLE users;");
+                $pdo->exec("TRUNCATE TABLE addresses;");
+                $pdo->exec("TRUNCATE TABLE delivery_boys;");
+                $pdo->exec("TRUNCATE TABLE orders;");
+                $pdo->exec("TRUNCATE TABLE order_items;");
+                $pdo->exec("TRUNCATE TABLE order_status_history;");
+                $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+
+                // Ensure email column exists in delivery_boys table
+                try {
+                    $pdo->exec("ALTER TABLE delivery_boys ADD COLUMN email VARCHAR(120) NULL UNIQUE AFTER phone;");
+                } catch (Exception $e) {}
+
+                $message = 'All dummy customer accounts, dummy riders, and dummy orders have been permanently wiped!';
+                $messageType = 'success';
+            } catch (PDOException $e) {
+                $message = 'Wipe failed: ' . htmlspecialchars($e->getMessage());
+                $messageType = 'danger';
+            }
+        }
+    } elseif ($action === 'save_admin') {
+        $pdo = Database::getConnection();
+        $adminName  = trim($_POST['admin_name'] ?? 'Super Admin');
+        $adminEmail = trim($_POST['admin_email'] ?? '');
+        $adminPass  = trim($_POST['admin_pass'] ?? '');
+
+        if (empty($adminEmail) || empty($adminPass)) {
+            $message = 'Admin email and password are required!';
+            $messageType = 'danger';
+        } elseif ($pdo) {
+            try {
+                $hash = password_hash($adminPass, PASSWORD_BCRYPT);
+                $stmt = $pdo->query("SELECT id FROM admins ORDER BY id ASC LIMIT 1");
+                $row = $stmt->fetch();
+
+                if ($row) {
+                    $up = $pdo->prepare("UPDATE admins SET name = ?, email = ?, password = ? WHERE id = ?");
+                    $up->execute([$adminName, $adminEmail, $hash, $row['id']]);
+                } else {
+                    $ins = $pdo->prepare("INSERT INTO admins (name, email, password, role) VALUES (?, ?, ?, 'super_admin')");
+                    $ins->execute([$adminName, $adminEmail, $hash]);
+                }
+
+                $message = "Admin credentials updated! You can now log in with email: {$adminEmail}";
+                $messageType = 'success';
+            } catch (PDOException $e) {
+                $message = 'Admin update failed: ' . htmlspecialchars($e->getMessage());
+                $messageType = 'danger';
             }
         }
     }
@@ -80,14 +175,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $pdo = Database::getConnection();
 $isConnected = ($pdo !== null);
 
-// Check if tables already exist
 $tableCount = 0;
+$adminCount = 0;
+$customerCount = 0;
+$riderCount = 0;
+$orderCount = 0;
+$activeAdminEmail = 'admin@everyfy.net';
+
 if ($isConnected) {
     try {
         $stmt = $pdo->query("SHOW TABLES");
         $tableCount = count($stmt->fetchAll());
-        if ($tableCount >= 8 && $step !== 'complete') {
-            $step = 'already_installed';
+
+        if ($tableCount >= 5) {
+            $adminCount = (int)$pdo->query("SELECT COUNT(*) FROM admins")->fetchColumn();
+            $customerCount = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+            $riderCount = (int)$pdo->query("SELECT COUNT(*) FROM delivery_boys")->fetchColumn();
+            $orderCount = (int)$pdo->query("SELECT COUNT(*) FROM orders")->fetchColumn();
+
+            $adminRow = $pdo->query("SELECT email FROM admins ORDER BY id ASC LIMIT 1")->fetch();
+            if ($adminRow) {
+                $activeAdminEmail = $adminRow['email'];
+            }
+
+            if ($step !== 'complete') {
+                $step = 'already_installed';
+            }
         } elseif ($step !== 'complete') {
             $step = 'install';
         }
@@ -177,6 +290,13 @@ if ($isConnected) {
             padding: 20px;
             border: 1px solid #E2E8F0;
         }
+        .stat-badge {
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 10px 14px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -217,24 +337,90 @@ if ($isConnected) {
             </div>
         </div>
 
-        <?php if ($step === 'already_installed' || $step === 'complete'): ?>
-            <div class="text-center py-3">
-                <div class="text-success mb-3">
-                    <i class="fa-solid fa-circle-check fa-4x"></i>
+        <?php if ($isConnected && $step === 'already_installed'): ?>
+            <div class="py-2">
+                <!-- Live Stats -->
+                <div class="row g-2 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="stat-badge">
+                            <small class="text-muted d-block">Admins</small>
+                            <span class="fw-bold fs-5 text-dark"><?= $adminCount ?></span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-badge">
+                            <small class="text-muted d-block">Customers</small>
+                            <span class="fw-bold fs-5 text-primary"><?= $customerCount ?></span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-badge">
+                            <small class="text-muted d-block">Riders</small>
+                            <span class="fw-bold fs-5 text-success"><?= $riderCount ?></span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-badge">
+                            <small class="text-muted d-block">Live Orders</small>
+                            <span class="fw-bold fs-5 text-warning"><?= $orderCount ?></span>
+                        </div>
+                    </div>
                 </div>
-                <h4 class="fw-bold">Database is Ready & Online!</h4>
-                <p class="text-muted mb-4">
-                    Your database contains <strong><?= $tableCount ?> tables</strong> with all grocery products, categories, coupons, and rider fleet.
-                </p>
 
-                <div class="card-info text-start mb-4">
-                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-key me-2 text-warning"></i>Default System Credentials:</h6>
-                    <ul class="list-unstyled mb-0 small">
-                        <li class="mb-2"><strong>👑 Web Admin:</strong> <code>admin@everyfy.net</code> | Pass: <code>admin123456</code></li>
-                        <li class="mb-2"><strong>🛵 Delivery Rider:</strong> Phone: <code>03019876543</code> | Pass: <code>1234</code></li>
-                        <li class="mb-2"><strong>🛒 Customer OTP:</strong> Use <code>1234</code> for instant verification</li>
-                        <li><strong>🏷️ Promo Coupon:</strong> <code>FRESH20</code> (Flat Rs 50 OFF)</li>
-                    </ul>
+                <div class="card-info mb-4">
+                    <h6 class="fw-bold mb-2"><i class="fa-solid fa-shield-halved me-2 text-success"></i>Current Admin Account</h6>
+                    <p class="mb-0 small text-muted">Login Email: <strong class="text-dark"><?= htmlspecialchars($activeAdminEmail) ?></strong></p>
+                </div>
+
+                <!-- Update Admin Credentials Form -->
+                <div class="card-info mb-4">
+                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-user-gear me-2 text-primary"></i>Update Admin Email & Password</h6>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="save_admin">
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold text-muted">Admin Name</label>
+                            <input type="text" name="admin_name" class="form-control form-control-sm" value="Super Admin" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold text-muted">Admin Email</label>
+                            <input type="email" name="admin_email" class="form-control form-control-sm" value="<?= htmlspecialchars($activeAdminEmail) ?>" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">New Admin Password</label>
+                            <input type="password" name="admin_pass" class="form-control form-control-sm" placeholder="Enter new strong password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm rounded-3 fw-bold w-100 py-2">
+                            <i class="fa-solid fa-check me-1"></i> Save Admin Credentials
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Wipe Dummy Accounts & Orders Button -->
+                <div class="card-info mb-4 border-danger-subtle bg-danger-subtle bg-opacity-10">
+                    <h6 class="fw-bold text-danger mb-2"><i class="fa-solid fa-trash-can me-2"></i>Wipe Dummy Accounts & Test Data</h6>
+                    <p class="small text-muted mb-3">
+                        This will permanently delete any dummy riders, demo customers, and dummy orders. Products and categories catalog will remain intact.
+                    </p>
+                    <form method="POST" onsubmit="return confirm('Are you sure you want to delete all dummy accounts and fake orders? Real signups will now start fresh.');">
+                        <input type="hidden" name="action" value="wipe_dummy_data">
+                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-3 fw-bold w-100 py-2">
+                            <i class="fa-solid fa-broom me-1"></i> Wipe All Dummy Data Now
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Sync Scanned Catalog Card -->
+                <div class="card-info mb-4 border-success-subtle bg-success-subtle bg-opacity-10">
+                    <h6 class="fw-bold text-success mb-2"><i class="fa-solid fa-boxes-stacked me-2"></i>Sync Live Scanned Catalog (16 Categories &amp; 189 Products)</h6>
+                    <p class="small text-muted mb-3">
+                        Re-seeds and synchronizes all 16 user-defined categories and 189 high-resolution scanned products into the live MySQL database.
+                    </p>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="seed_scanned_catalog">
+                        <button type="submit" class="btn btn-outline-success btn-sm rounded-3 fw-bold w-100 py-2">
+                            <i class="fa-solid fa-arrows-rotate me-1"></i> Sync Live Catalog into Database
+                        </button>
+                    </form>
                 </div>
 
                 <div class="d-grid gap-2">
@@ -242,22 +428,35 @@ if ($isConnected) {
                         <i class="fa-solid fa-gauge me-2"></i> Open Web Admin Panel
                     </a>
                     <a href="api/index.php" class="btn btn-outline-secondary rounded-3 py-2 fw-semibold">
-                        <i class="fa-solid fa-network-wired me-2"></i> Test REST APIs
+                        <i class="fa-solid fa-network-wired me-2"></i> Test Live REST APIs
                     </a>
                 </div>
             </div>
 
         <?php elseif ($isConnected): ?>
-            <!-- Ready to Install Database Schema -->
+            <!-- Ready to Install Clean Database Schema -->
             <div class="text-center py-2 mb-4">
                 <h5 class="fw-bold">Connection Established!</h5>
-                <p class="text-muted">
-                    Click the button below to automatically create all tables and populate initial store products, categories, and rider accounts.
+                <p class="text-muted small">
+                    Click the button below to create all tables without any fake accounts or dummy orders.
                 </p>
-                <form method="POST">
+                <form method="POST" class="text-start card-info mb-3">
                     <input type="hidden" name="action" value="install_db">
+                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-user-shield me-2 text-primary"></i>Set Your Admin Account</h6>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-muted">Admin Full Name</label>
+                        <input type="text" name="admin_name" class="form-control form-control-sm" value="Super Admin" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-muted">Admin Email Address</label>
+                        <input type="email" name="admin_email" class="form-control form-control-sm" placeholder="e.g. yourname@gmail.com" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Admin Password</label>
+                        <input type="password" name="admin_pass" class="form-control form-control-sm" placeholder="Enter your chosen password" required>
+                    </div>
                     <button type="submit" class="btn btn-brand">
-                        <i class="fa-solid fa-cloud-arrow-up me-2"></i> Import Tables & Seed Data Now
+                        <i class="fa-solid fa-cloud-arrow-up me-2"></i> Import Clean Database & Create Admin
                     </button>
                 </form>
             </div>

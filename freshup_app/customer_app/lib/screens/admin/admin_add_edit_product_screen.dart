@@ -1,7 +1,12 @@
+import 'dart:io';
+import '../../widgets/image_picker_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
 import '../../providers/admin_provider.dart';
+import '../../providers/catalog_provider.dart';
+import '../../services/api_service.dart';
+import '../../widgets/app_network_image.dart';
 
 class AdminAddEditProductScreen extends StatefulWidget {
   final ProductModel? productToEdit;
@@ -76,14 +81,15 @@ class _AdminAddEditProductScreenState extends State<AdminAddEditProductScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final admin = context.read<AdminProvider>();
+    final catalog = context.read<CatalogProvider>();
     final isEditing = widget.productToEdit != null;
 
     final name = _nameController.text.trim();
-    final price = double.parse(_priceController.text.trim());
+    final price = double.tryParse(_priceController.text.trim()) ?? 0.0;
     final discountPrice = _discountPriceController.text.trim().isNotEmpty
         ? double.tryParse(_discountPriceController.text.trim())
         : null;
-    final unit = _unitController.text.trim();
+    final unit = _unitController.text.trim().isNotEmpty ? _unitController.text.trim() : '1 kg';
     final stock = int.tryParse(_stockController.text.trim()) ?? 0;
     final description = _descriptionController.text.trim();
     final image = _imageController.text.trim();
@@ -99,14 +105,31 @@ class _AdminAddEditProductScreenState extends State<AdminAddEditProductScreen> {
         discountPrice: discountPrice,
         unit: unit,
         stockQty: stock,
+        sizes: widget.productToEdit!.sizes,
       );
       admin.updateProduct(updated);
+      catalog.upsertProduct(updated);
+
+      ApiService.adminSaveProduct({
+        'id': widget.productToEdit!.id,
+        'category_id': _selectedCategoryId,
+        'name': name,
+        'description': description,
+        'price': price,
+        'discount_price': discountPrice,
+        'unit': unit,
+        'stock_qty': stock,
+        'image': image,
+        'is_available': 1,
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Updated $name successfully')),
+        SnackBar(content: Text('Updated $name successfully (Live across store)')),
       );
     } else {
+      final tempId = DateTime.now().millisecondsSinceEpoch % 100000;
       final newProduct = ProductModel(
-        id: DateTime.now().millisecondsSinceEpoch,
+        id: tempId,
         categoryId: _selectedCategoryId,
         name: name,
         description: description,
@@ -117,8 +140,29 @@ class _AdminAddEditProductScreenState extends State<AdminAddEditProductScreen> {
         stockQty: stock,
       );
       admin.addProduct(newProduct);
+      catalog.upsertProduct(newProduct);
+
+      ApiService.adminSaveProduct({
+        'category_id': _selectedCategoryId,
+        'name': name,
+        'description': description,
+        'price': price,
+        'discount_price': discountPrice,
+        'unit': unit,
+        'stock_qty': stock,
+        'image': image,
+        'is_available': 1,
+      }).then((res) {
+        if (res['success'] == true && res['data'] != null && res['data']['id'] != null) {
+          final realId = int.tryParse(res['data']['id'].toString());
+          if (realId != null) {
+            catalog.upsertProduct(newProduct.copyWith(id: realId));
+          }
+        }
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Added $name to catalog')),
+        SnackBar(content: Text('Added $name to catalog (Live across store)')),
       );
     }
 
@@ -202,12 +246,11 @@ class _AdminAddEditProductScreenState extends State<AdminAddEditProductScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildFieldLabel('Price (Rs) *'),
+                              _buildFieldLabel('Price (Rs) · 0 for Market Rate'),
                               TextFormField(
                                 controller: _priceController,
                                 keyboardType: TextInputType.number,
-                                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                                decoration: _buildInputDecoration('350'),
+                                decoration: _buildInputDecoration('0 (As per Market Rate)'),
                               ),
                             ],
                           ),
@@ -319,26 +362,88 @@ class _AdminAddEditProductScreenState extends State<AdminAddEditProductScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Product Image',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Product Image *',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+              ),
+              InkWell(
+                onTap: () => _showImageSourceModal(context),
+                borderRadius: BorderRadius.circular(8),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(Icons.collections_rounded, size: 14, color: Color(0xFF0D5C3A)),
+                      SizedBox(width: 4),
+                      Text(
+                        'Browse Catalog',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0D5C3A)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: Image.network(
-                  _imageController.text,
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    width: 80,
-                    height: 80,
-                    color: const Color(0xFFF1F5F9),
-                    child: const Icon(Icons.broken_image_rounded, color: Colors.grey),
-                  ),
+              // Tap Image to Pick
+              GestureDetector(
+                onTap: () => _showImageSourceModal(context),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: _imageController.text.isNotEmpty
+                          ? (_imageController.text.startsWith('http') || _imageController.text.startsWith('assets/') || _imageController.text.startsWith('uploads/')
+                              ? AppNetworkImage(
+                                  imageUrl: _imageController.text,
+                                  width: 90,
+                                  height: 90,
+                                  fit: BoxFit.cover,
+                                  borderRadius: 16,
+                                )
+                              : Image.file(
+                                  File(_imageController.text),
+                                  width: 90,
+                                  height: 90,
+                                  fit: BoxFit.cover,
+                                ))
+                          : const Center(
+                              child: Icon(Icons.add_photo_alternate_rounded, size: 36, color: Color(0xFF94A3B8)),
+                            ),
+                    ),
+                    Positioned(
+                      right: 4,
+                      bottom: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D5C3A),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.camera_alt_rounded, size: 14, color: Colors.white),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 14),
@@ -346,39 +451,82 @@ class _AdminAddEditProductScreenState extends State<AdminAddEditProductScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Select Quick Preset Photo:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 6),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: _presetImages.map((p) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: ActionChip(
-                              label: Text(p['title']!, style: const TextStyle(fontSize: 11)),
-                              backgroundColor: const Color(0xFFF1F5F9),
-                              onPressed: () {
-                                setState(() => _imageController.text = p['url']!);
-                              },
-                            ),
-                          );
-                        }).toList(),
+                    ElevatedButton.icon(
+                      onPressed: () => _showImageSourceModal(context),
+                      icon: const Icon(Icons.add_photo_alternate_rounded, size: 18),
+                      label: const Text(
+                        'Upload / Pick from Phone',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                       ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0D5C3A),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Tap to choose phone photo, file, or 25+ grocery presets',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                     ),
                   ],
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 14),
+          const Text('Quick HD Studio Presets:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _presetImages.map((p) {
+                final isSelected = _imageController.text == p['url'];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: FilterChip(
+                    selected: isSelected,
+                    selectedColor: const Color(0xFFDCFCE7),
+                    label: Text(
+                      p['title']!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                        color: isSelected ? const Color(0xFF0D5C3A) : const Color(0xFF334155),
+                      ),
+                    ),
+                    backgroundColor: const Color(0xFFF1F5F9),
+                    onSelected: (_) {
+                      setState(() => _imageController.text = p['url']!);
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _imageController,
             onChanged: (val) => setState(() {}),
-            decoration: _buildInputDecoration('Custom Image URL (https://...)'),
+            decoration: _buildInputDecoration('Image URL or Path (assets/... or https://...)'),
             style: const TextStyle(fontSize: 12),
           ),
         ],
       ),
+    );
+  }
+
+    void _showImageSourceModal(BuildContext context) {
+    ImagePickerHelper.showImageSourceSheet(
+      context: context,
+      folder: 'products',
+      onImageSelected: (file, uploadedUrl) {
+        setState(() {
+          _imageController.text = uploadedUrl ?? file.path;
+        });
+      },
     );
   }
 

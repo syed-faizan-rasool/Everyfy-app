@@ -6,6 +6,8 @@ import '../../providers/admin_provider.dart';
 import '../../widgets/animated_widgets.dart';
 import 'admin_add_edit_product_screen.dart';
 import 'admin_order_detail_screen.dart';
+import '../notification/notifications_screen.dart';
+import '../../providers/notification_provider.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   final Function(int tabIndex)? onNavigateToTab;
@@ -162,6 +164,40 @@ class AdminDashboardScreen extends StatelessWidget {
                   ),
                 );
               },
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Admin Notification Bell with live unread badge
+          InkWell(
+            onTap: () {
+              context.read<NotificationProvider>().setRoleAndUser(role: 'admin');
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Consumer<NotificationProvider>(
+                builder: (_, notifProv, __) {
+                  return notifProv.unreadCount > 0
+                      ? Badge(
+                          backgroundColor: const Color(0xFFEF4444),
+                          label: Text(
+                            '${notifProv.unreadCount}',
+                            style: const TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                          child: const Icon(Icons.notifications_none_rounded, color: Color(0xFF0F172A), size: 20),
+                        )
+                      : const Icon(Icons.notifications_none_rounded, color: Color(0xFF64748B), size: 20);
+                },
+              ),
             ),
           ),
         ],
@@ -562,7 +598,9 @@ class AdminDashboardScreen extends StatelessWidget {
                                 style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                               ),
                               Text(
-                                'Rs ${order.total.toStringAsFixed(0)}',
+                                order.total > 0
+                                    ? 'Rs ${order.total.toStringAsFixed(0)}'
+                                    : 'As per Market Rate',
                                 style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF0D5C3A)),
                               ),
                             ],

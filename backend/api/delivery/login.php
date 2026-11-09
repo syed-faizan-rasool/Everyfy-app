@@ -15,19 +15,25 @@ if (!$pdo) {
     sendError('Database connection failed', 500);
 }
 
-$data     = getRequestData();
-$phone    = isset($data['phone']) ? trim($data['phone']) : '';
-$password = isset($data['password']) ? trim($data['password']) : '';
+$data       = getRequestData();
+$identifier = isset($data['phone']) ? trim($data['phone']) : (isset($data['email']) ? trim($data['email']) : (isset($data['identifier']) ? trim($data['identifier']) : ''));
+$password   = isset($data['password']) ? trim($data['password']) : '';
 
-if (empty($phone) || empty($password)) {
-    sendError('Phone number and password are required', 422);
+if (empty($identifier) || empty($password)) {
+    sendError('Phone number or email and password are required', 422);
 }
 
-$cleanPhone = preg_replace('/[^0-9]/', '', $phone);
+$cleanPhone = preg_replace('/[^0-9]/', '', $identifier);
+$isEmail    = filter_var($identifier, FILTER_VALIDATE_EMAIL) || str_contains($identifier, '@');
 
 try {
-    $stmt = $pdo->prepare("SELECT * FROM delivery_boys WHERE phone = ? AND is_active = 1 LIMIT 1");
-    $stmt->execute([$cleanPhone]);
+    if ($isEmail) {
+        $stmt = $pdo->prepare("SELECT * FROM delivery_boys WHERE (email IS NOT NULL AND LOWER(email) = LOWER(?)) AND is_active = 1 LIMIT 1");
+        $stmt->execute([$identifier]);
+    } else {
+        $stmt = $pdo->prepare("SELECT * FROM delivery_boys WHERE (phone = ? OR (email IS NOT NULL AND LOWER(email) = LOWER(?))) AND is_active = 1 LIMIT 1");
+        $stmt->execute([$cleanPhone, $identifier]);
+    }
     $rider = $stmt->fetch();
 
     if ($rider) {

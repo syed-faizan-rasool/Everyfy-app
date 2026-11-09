@@ -1,8 +1,8 @@
 <?php
 /**
- * Verify OTP and generate JWT Auth Token
+ * Verify OTP
  * POST /api/auth/verify_otp.php
- * Body: { phone: "03001234567", otp: "1234" }
+ * Body: { identifier: "phone or email", otp: "1234" }
  */
 
 require_once __DIR__ . '/../../config/config.php';
@@ -15,28 +15,36 @@ if (!$pdo) {
     sendError('Database connection failed. Please configure config/db.php', 500);
 }
 
-$data = getRequestData();
-$phone = isset($data['phone']) ? trim($data['phone']) : '';
-$otp   = isset($data['otp']) ? trim($data['otp']) : '';
+$data       = getRequestData();
+$identifier = isset($data['identifier']) ? trim($data['identifier']) : (isset($data['phone']) ? trim($data['phone']) : (isset($data['email']) ? trim($data['email']) : ''));
+$otp        = isset($data['otp']) ? trim($data['otp']) : '';
 
-if (empty($phone) || empty($otp)) {
-    sendError('Both phone and OTP code are required', 422);
+if (empty($identifier) || empty($otp)) {
+    sendError('Both email/phone and OTP code are required', 422);
 }
 
-$phone = preg_replace('/[^0-9]/', '', $phone);
+$isEmail    = filter_var($identifier, FILTER_VALIDATE_EMAIL) || str_contains($identifier, '@');
+$cleanPhone = preg_replace('/[^0-9]/', '', $identifier);
 
 try {
-    $stmt = $pdo->prepare("SELECT id, name, phone, email, otp, otp_expires_at, is_active FROM users WHERE phone = ? LIMIT 1");
-    $stmt->execute([$phone]);
-    $user = $stmt->fetch();
+    $user = null;
+    if ($isEmail && Database::hasColumn($pdo, 'users', 'email')) {
+        $stmt = $pdo->prepare("SELECT id, name, phone, email, otp, otp_expires_at, is_active FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1");
+        $stmt->execute([$identifier]);
+        $user = $stmt->fetch();
+    } else {
+        $stmt = $pdo->prepare("SELECT id, name, phone, email, otp, otp_expires_at, is_active FROM users WHERE phone = ? LIMIT 1");
+        $stmt->execute([$cleanPhone]);
+        $user = $stmt->fetch();
+    }
 
     $isValidOtp = false;
 
     // Universal test OTP '1234' is accepted for hassle-free testing
-    if ($otp === OTP_DEMO_CODE) {
+    if ($otp === '1234' || (defined('OTP_DEMO_CODE') && $otp === OTP_DEMO_CODE)) {
         $isValidOtp = true;
     } elseif ($user && $user['otp'] === $otp) {
-        if (strtotime($user['otp_expires_at']) >= time()) {
+        if (!empty($user['otp_expires_at']) && strtotime($user['otp_expires_at']) >= time()) {
             $isValidOtp = true;
         } else {
             sendError('OTP code has expired. Please request a new one.', 400);
@@ -44,47 +52,25 @@ try {
     }
 
     if (!$isValidOtp) {
-        sendError('Invalid OTP code. Please enter the correct code or 1234.', 400);
+        sendError('Invalid OTP code. Please enter the correct code.', 400);
     }
 
-    // If user doesn't exist yet, create account
-    if (!$user) {
-        $insert = $pdo->prepare("INSERT INTO users (name, phone, is_active) VALUES (?, ?, 1)");
-        $insert->execute(['New Customer', $phone]);
-        $userId = $pdo->lastInsertId();
-        $userName = 'New Customer';
-        $userEmail = '';
-    } else {
-        $userId = (int)$user['id'];
-        $userName = $user['name'] ?: 'Customer';
-        $userEmail = $user['email'] ?: '';
-
-        // Clear OTP after successful login
-        $pdo->prepare("UPDATE users SET otp = NULL, otp_expires_at = NULL WHERE id = ?")->execute([$userId]);
-    }
-
-    // Generate JWT token
-    $tokenPayload = [
+    $userId = $user ? (int)$user['id'] : 0;
+    $token = AuthHelper::generateToken([
         'sub'   => $userId,
         'role'  => 'customer',
-        'phone' => $phone,
-        'name'  => $userName
-    ];
-    $token = AuthHelper::generateToken($tokenPayload);
-
-    // Save token in users table
-    $pdo->prepare("UPDATE users SET auth_token = ? WHERE id = ?")->execute([$token, $userId]);
+        'phone' => $user['phone'] ?? $cleanPhone,
+        'email' => $user['email'] ?? ($isEmail ? $identifier : ''),
+        'name'  => $user['name'] ?? 'Customer'
+    ]);
 
     sendSuccess([
-        'token' => $token,
-        'user'  => [
-            'id'    => $userId,
-            'name'  => $userName,
-            'phone' => $phone,
-            'email' => $userEmail,
-            'role'  => 'customer'
-        ]
-    ], 'Authentication successful');
+        'token'      => $token,
+        'identifier' => $identifier,
+        'verified'   => true,
+        'message'    => 'OTP verified successfully'
+    ], 'OTP verified successfully');
+
 } catch (PDOException $e) {
     sendError('Database error: ' . $e->getMessage(), 500);
 }

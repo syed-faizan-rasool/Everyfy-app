@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import '../data/dummy_data.dart';
 import '../models/banner_model.dart';
 import '../models/category_model.dart';
 import '../models/product_model.dart';
 import '../services/api_service.dart';
 
-/// Real-time Catalog Provider for Live Banners, Categories & Products strictly from backend
+/// Real-time Catalog Provider for Live Banners, Categories & Products
 class CatalogProvider extends ChangeNotifier {
-  List<CategoryModel> _categories = [];
-  List<ProductModel> _products = [];
+  List<CategoryModel> _categories = List.from(DummyData.categories);
+  List<ProductModel> _products = List.from(DummyData.products);
   List<BannerModel> _banners = [];
-  bool _isLoading = true;
+  bool _isLoading = false;
   String? _error;
   String _searchQuery = '';
   int? _selectedCategoryId;
@@ -58,6 +59,23 @@ class CatalogProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Sync locally modified or newly added product immediately across customer screens
+  void upsertProduct(ProductModel product) {
+    final idx = _products.indexWhere((p) => p.id == product.id);
+    if (idx >= 0) {
+      _products[idx] = product;
+    } else {
+      _products.insert(0, product);
+    }
+    notifyListeners();
+  }
+
+  /// Remove deleted product from customer screens immediately
+  void removeProduct(int productId) {
+    _products.removeWhere((p) => p.id == productId);
+    notifyListeners();
+  }
+
   /// Live Sync from Hostinger Backend
   Future<void> fetchCatalog() async {
     _isLoading = true;
@@ -75,9 +93,28 @@ class CatalogProvider extends ChangeNotifier {
       final liveProducts = results[1] as List<ProductModel>;
       final liveBanners = results[2] as List<BannerModel>;
 
-      _categories = liveCategories;
-      _products = liveProducts;
-      _banners = liveBanners;
+      if (liveCategories.isNotEmpty) {
+        // Resilient merge: ensure all 16 scanned categories remain available
+        final Map<int, CategoryModel> catMap = {
+          for (var c in DummyData.categories) c.id: c,
+        };
+        for (var c in liveCategories) {
+          catMap[c.id] = c;
+        }
+        _categories = catMap.values.toList()..sort(CategoryModel.compareByPreferredOrder);
+      }
+
+      if (liveProducts.isNotEmpty) {
+        // Resilient merge: ensure all 189 scanned products across all categories are preserved
+        final Map<int, ProductModel> prodMap = {
+          for (var p in DummyData.products) p.id: p,
+        };
+        for (var p in liveProducts) {
+          prodMap[p.id] = p;
+        }
+        _products = prodMap.values.toList();
+      }
+      if (liveBanners.isNotEmpty) _banners = liveBanners;
     } catch (e) {
       _error = e.toString();
     } finally {

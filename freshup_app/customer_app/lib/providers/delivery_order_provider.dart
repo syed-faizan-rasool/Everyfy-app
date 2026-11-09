@@ -1,55 +1,79 @@
 import 'package:flutter/foundation.dart';
-import '../data/dummy_delivery_data.dart';
 import '../models/delivery_order_model.dart';
 import '../models/order_model.dart';
 import '../services/api_service.dart';
 
+class WithdrawalRequest {
+  final String id;
+  final String method;
+  final String accountNumber;
+  final double amount;
+  final DateTime date;
+  final String status;
+
+  const WithdrawalRequest({
+    required this.id,
+    required this.method,
+    required this.accountNumber,
+    required this.amount,
+    required this.date,
+    this.status = 'Pending',
+  });
+}
+
 class DeliveryOrderProvider extends ChangeNotifier {
   bool _isOnline = true;
   bool _isLoggedIn = false;
-  String _riderName = 'Ahmed Khan';
-  String _riderPhone = '03019876543';
-  String _riderVehicle = 'Honda CD70 · LEB-4921';
-  double _riderRating = 4.9;
-  int _totalDeliveriesAllTime = 142;
+  String _riderName = '';
+  String _riderPhone = '';
+  String _riderVehicle = '';
+  String _riderAvatar = '';
+  String get riderAvatar => _riderAvatar;
+  double _riderRating = 5.0;
+  int _totalDeliveriesAllTime = 0;
 
   List<DeliveryOrderModel> _availableOrders = [];
   DeliveryOrderModel? _activeOrder;
   List<DeliveryOrderModel> _completedOrders = [];
+  final List<WithdrawalRequest> _withdrawals = [];
 
   DeliveryOrderProvider() {
     _loadInitialData();
-    fetchAvailableOrders();
+  }
+
+  void updateRiderAvatar(String url) {
+    _riderAvatar = url;
+    notifyListeners();
   }
 
   void _loadInitialData() {
-    _availableOrders = DummyDeliveryData.getInitialAvailableOrders();
-    _completedOrders = DummyDeliveryData.getInitialCompletedOrders();
+    _availableOrders = [];
+    _completedOrders = [];
+    _withdrawals.clear();
   }
 
   /// Refresh available orders from server
   Future<void> fetchAvailableOrders() async {
     try {
       final remoteOrders = await ApiService.getRiderAvailableOrders();
-      if (remoteOrders.isNotEmpty) {
-        _availableOrders = remoteOrders;
-        notifyListeners();
-      }
+      _availableOrders = remoteOrders;
+      notifyListeners();
     } catch (_) {}
   }
 
   // Getters
   bool get isOnline => _isOnline;
   bool get isLoggedIn => _isLoggedIn;
-  String get riderName => _riderName;
+  String get riderName => _riderName.isNotEmpty ? _riderName : 'Delivery Rider';
   String get riderPhone => _riderPhone;
-  String get riderVehicle => _riderVehicle;
+  String get riderVehicle => _riderVehicle.isNotEmpty ? _riderVehicle : 'Motorcycle';
   double get riderRating => _riderRating;
   int get totalDeliveriesAllTime => _totalDeliveriesAllTime + _completedOrders.length;
 
   List<DeliveryOrderModel> get availableOrders => _isOnline ? List.unmodifiable(_availableOrders) : [];
   DeliveryOrderModel? get activeOrder => _activeOrder;
   List<DeliveryOrderModel> get completedOrders => List.unmodifiable(_completedOrders);
+  List<WithdrawalRequest> get withdrawals => List.unmodifiable(_withdrawals);
 
   // Financial calculations
   double get todayEarnings {
@@ -57,13 +81,35 @@ class DeliveryOrderProvider extends ChangeNotifier {
     return earnings;
   }
 
-  double get weeklyEarnings => todayEarnings + 4350.0;
-  double get monthlyEarnings => weeklyEarnings + 18600.0;
+  double get weeklyEarnings => todayEarnings;
+  double get monthlyEarnings => todayEarnings;
+
+  double get totalWithdrawn => _withdrawals.fold<double>(0.0, (sum, w) => sum + w.amount);
+  double get availableBalance => (todayEarnings - totalWithdrawn).clamp(0.0, double.infinity);
 
   int get todayDeliveriesCount => _completedOrders.length;
 
   double get todayDistanceKm {
     return _completedOrders.fold<double>(0.0, (sum, o) => sum + o.distanceKm);
+  }
+
+  bool requestWithdrawal({
+    required String method,
+    required String accountNumber,
+    required double amount,
+  }) {
+    if (amount <= 0 || amount > availableBalance) return false;
+    final req = WithdrawalRequest(
+      id: 'WD-${DateTime.now().millisecondsSinceEpoch % 100000}',
+      method: method,
+      accountNumber: accountNumber,
+      amount: amount,
+      date: DateTime.now(),
+      status: 'Pending',
+    );
+    _withdrawals.insert(0, req);
+    notifyListeners();
+    return true;
   }
 
   // Online / Offline toggle
@@ -79,18 +125,41 @@ class DeliveryOrderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Rider login with backend API & fallback
-  Future<bool> login(String phone, String password) async {
+  /// Set rider session from AuthProvider
+  void setRiderSession({
+    required String name,
+    required String phone,
+    String? vehicle,
+    double? rating,
+    int? totalDeliveries,
+  }) {
+    _isLoggedIn = true;
+    _riderName = name;
+    _riderPhone = phone;
+    if (vehicle != null && vehicle.isNotEmpty) _riderVehicle = vehicle;
+    if (rating != null) _riderRating = rating;
+    if (totalDeliveries != null) _totalDeliveriesAllTime = totalDeliveries;
+    notifyListeners();
+    fetchAvailableOrders();
+  }
+
+  /// Rider login with backend API
+  Future<bool> login(String identifier, String password) async {
     try {
-      final res = await ApiService.riderLogin(phone, password);
+      final res = await ApiService.login(
+        identifier: identifier,
+        password: password,
+        role: 'rider',
+      );
       if (res['success'] == true && res['data'] != null) {
         _isLoggedIn = true;
-        _riderPhone = phone;
-        final riderData = res['data']['rider'];
+        _riderPhone = identifier;
+        final riderData = res['data']['user'] ?? res['data']['rider'];
         if (riderData != null) {
-          _riderName = riderData['name'] ?? 'Ahmed Khan';
-          _riderVehicle = riderData['vehicle_number'] ?? _riderVehicle;
-          _riderRating = double.tryParse((riderData['rating'] ?? 4.9).toString()) ?? 4.9;
+          _riderName = riderData['name'] ?? 'Delivery Rider';
+          _riderVehicle = riderData['vehicle'] ?? riderData['vehicle_number'] ?? _riderVehicle;
+          _riderRating = double.tryParse((riderData['rating'] ?? 5.0).toString()) ?? 5.0;
+          _totalDeliveriesAllTime = int.tryParse((riderData['total_deliveries'] ?? 0).toString()) ?? 0;
         }
         notifyListeners();
         fetchAvailableOrders();

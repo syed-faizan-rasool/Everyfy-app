@@ -7,9 +7,24 @@ import '../../utils/app_colors.dart';
 import '../../widgets/animated_widgets.dart';
 import 'order_tracking_screen.dart';
 
-class OrderHistoryScreen extends StatelessWidget {
+class OrderHistoryScreen extends StatefulWidget {
   final bool embedded;
   const OrderHistoryScreen({super.key, this.embedded = false});
+
+  @override
+  State<OrderHistoryScreen> createState() => _OrderHistoryScreenState();
+}
+
+class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<OrderProvider>().fetchOrders();
+      }
+    });
+  }
 
   Color _getStatusColor(OrderStatus status) {
     switch (status) {
@@ -171,10 +186,12 @@ class OrderHistoryScreen extends StatelessWidget {
                           Row(
                             children: [
                               Text(
-                                'Rs ${order.total.toStringAsFixed(0)}',
-                                style: const TextStyle(
+                                order.total > 0
+                                    ? 'Rs ${order.total.toStringAsFixed(0)}'
+                                    : 'As per Market Rate',
+                                style: TextStyle(
                                   fontWeight: FontWeight.w800,
-                                  fontSize: 16,
+                                  fontSize: order.total > 0 ? 16 : 13,
                                   color: AppColors.primary,
                                 ),
                               ),
@@ -196,7 +213,7 @@ class OrderHistoryScreen extends StatelessWidget {
           ),
     );
 
-    if (embedded) {
+    if (widget.embedded) {
       return Column(
         children: [
           const Padding(

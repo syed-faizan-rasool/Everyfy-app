@@ -1,5 +1,6 @@
 import 'order_model.dart';
 import 'cart_item_model.dart';
+import 'product_model.dart';
 
 class AdminUserModel {
   final String id;
@@ -111,6 +112,35 @@ class RiderFleetMemberModel {
       currentOrderId: currentOrderId ?? this.currentOrderId,
     );
   }
+
+  factory RiderFleetMemberModel.fromJson(Map<String, dynamic> json) {
+    FleetDutyStatus status = FleetDutyStatus.available;
+    final isOnline = json['is_online'] == true || json['is_online'] == 1 || json['is_online'] == '1';
+    final currentOrder = json['current_order']?.toString();
+    if (currentOrder != null && currentOrder.isNotEmpty) {
+      status = FleetDutyStatus.onDelivery;
+    } else if (!isOnline) {
+      status = FleetDutyStatus.offline;
+    } else {
+      status = FleetDutyStatus.available;
+    }
+
+    final vehicleStr = json['vehicle'] != null
+        ? json['vehicle'].toString()
+        : '${json['vehicle_type'] ?? 'Motorcycle'} · ${json['vehicle_number'] ?? ''}';
+
+    return RiderFleetMemberModel(
+      id: json['id']?.toString() ?? '0',
+      name: json['name']?.toString() ?? 'Rider',
+      phone: json['phone']?.toString() ?? '',
+      vehicle: vehicleStr,
+      rating: double.tryParse((json['rating'] ?? 5.0).toString()) ?? 5.0,
+      completedToday: int.tryParse((json['total_deliveries'] ?? 0).toString()) ?? 0,
+      earningsToday: 0.0,
+      status: status,
+      currentOrderId: currentOrder,
+    );
+  }
 }
 
 class CouponModel {
@@ -209,6 +239,50 @@ class AdminOrderModel {
       assignedRiderName: assignedRiderName ?? this.assignedRiderName,
       assignedRiderPhone: assignedRiderPhone ?? this.assignedRiderPhone,
       customerNotes: customerNotes ?? this.customerNotes,
+    );
+  }
+
+  factory AdminOrderModel.fromJson(Map<String, dynamic> json) {
+    List<CartItemModel> items = [];
+    if (json['items'] is List) {
+      items = (json['items'] as List).map((i) {
+        final pName = i['name'] ?? i['product_name'] ?? 'Product';
+        final pPrice = double.tryParse((i['price'] ?? i['product_price'] ?? 0).toString()) ?? 0.0;
+        final pQty = int.tryParse((i['quantity'] ?? 1).toString()) ?? 1;
+        return CartItemModel(
+          product: ProductModel(
+            id: int.tryParse((i['product_id'] ?? 0).toString()) ?? 0,
+            categoryId: 1,
+            name: pName.toString(),
+            description: '',
+            image: i['image']?.toString() ?? 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500',
+            price: pPrice,
+            unit: i['unit']?.toString() ?? '1 pc',
+            stockQty: int.tryParse((i['stock_qty'] ?? 10).toString()) ?? 10,
+          ),
+          quantity: pQty,
+        );
+      }).toList();
+    }
+
+    return AdminOrderModel(
+      id: json['id']?.toString() ?? '',
+      orderNumber: json['order_number']?.toString() ?? (json['id']?.toString() ?? 'ORD-0'),
+      customerName: json['customer_name']?.toString() ?? 'Customer',
+      customerPhone: json['customer_phone']?.toString() ?? '',
+      address: json['address']?.toString() ?? (json['address_text']?.toString() ?? ''),
+      items: items,
+      subtotal: double.tryParse((json['subtotal'] ?? 0).toString()) ?? 0.0,
+      deliveryFee: double.tryParse((json['delivery_fee'] ?? 0).toString()) ?? 0.0,
+      discount: double.tryParse((json['discount'] ?? 0).toString()) ?? 0.0,
+      total: double.tryParse((json['total'] ?? json['total_amount'] ?? 0).toString()) ?? 0.0,
+      paymentMethod: json['payment_method']?.toString() ?? 'Cash on Delivery',
+      createdAt: json['created_at'] != null ? (DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()) : DateTime.now(),
+      status: OrderModel.parseStatus(json['status']?.toString() ?? json['order_status']?.toString()),
+      assignedRiderId: json['delivery_boy_id']?.toString(),
+      assignedRiderName: json['rider_name']?.toString(),
+      assignedRiderPhone: json['rider_phone']?.toString(),
+      customerNotes: json['notes']?.toString(),
     );
   }
 }

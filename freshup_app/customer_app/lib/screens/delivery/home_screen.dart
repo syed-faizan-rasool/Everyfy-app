@@ -7,6 +7,8 @@ import '../../utils/app_colors.dart';
 import '../../widgets/animated_widgets.dart';
 import 'active_delivery_screen.dart';
 import 'order_detail_screen.dart';
+import '../notification/notifications_screen.dart';
+import '../../providers/notification_provider.dart';
 
 class RiderHomeScreen extends StatelessWidget {
   const RiderHomeScreen({super.key});
@@ -140,6 +142,39 @@ class RiderHomeScreen extends StatelessWidget {
                               ),
                             ),
                           ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Rider Notification Bell with live unread badge
+                    InkWell(
+                      onTap: () {
+                        context.read<NotificationProvider>().setRoleAndUser(role: 'rider');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Consumer<NotificationProvider>(
+                          builder: (_, notifProv, __) {
+                            return notifProv.unreadCount > 0
+                                ? Badge(
+                                    backgroundColor: AppColors.accent,
+                                    label: Text(
+                                      '${notifProv.unreadCount}',
+                                      style: const TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
+                                    ),
+                                    child: const Icon(Icons.notifications_none_rounded, color: AppColors.primary, size: 20),
+                                  )
+                                : const Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary, size: 20);
+                          },
                         ),
                       ),
                     ),

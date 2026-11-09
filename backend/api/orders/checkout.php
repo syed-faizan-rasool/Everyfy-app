@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/response.php';
 require_once __DIR__ . '/../../helpers/auth.php';
+require_once __DIR__ . '/../../helpers/notification_helper.php';
 
 $pdo = Database::getConnection();
 if (!$pdo) {
@@ -115,6 +116,27 @@ try {
     }
 
     $pdo->commit();
+
+    // Trigger in-app notifications for Customer and Admin
+    NotificationHelper::create(
+        $pdo,
+        'customer',
+        'Order Placed Successfully! 🎉',
+        "Your order #{$orderNumber} (PKR {$totalAmount}) has been received and is being prepared.",
+        $userId,
+        $orderId,
+        $orderNumber
+    );
+
+    NotificationHelper::create(
+        $pdo,
+        'admin',
+        'New Order Received! 🛒',
+        "New order #{$orderNumber} placed for PKR {$totalAmount}. Please assign a delivery rider.",
+        null,
+        $orderId,
+        $orderNumber
+    );
 
     sendSuccess([
         'id'             => $orderId,

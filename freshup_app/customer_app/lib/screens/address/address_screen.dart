@@ -42,7 +42,7 @@ class _AddressScreenState extends State<AddressScreen> {
   void _openAddAddressSheet() {
     final addressLineController = TextEditingController();
     final areaController = TextEditingController();
-    final cityController = TextEditingController(text: 'Lahore');
+    final cityController = TextEditingController(text: 'Gojra');
     String selectedLabel = 'Home';
 
     showModalBottomSheet(

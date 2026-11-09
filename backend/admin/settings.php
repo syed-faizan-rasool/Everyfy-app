@@ -30,6 +30,8 @@ $deliveryFee = $settings['delivery_fee'] ?? '100';
 $freeDeliveryMin = $settings['free_delivery_threshold'] ?? '1000';
 $storePhone = $settings['support_phone'] ?? '03001234567';
 $storeName = $settings['store_name'] ?? 'Everyfy Grocery';
+$operatingOpen = $settings['operating_hours_open'] ?? '08:00';
+$operatingClose = $settings['operating_hours_close'] ?? '23:00';
 
 // Handle Profile & Password Update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_profile'])) {
@@ -97,15 +99,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_store'])) {
             $st->execute([$k, $v, $v]);
         };
 
+        $newOpen        = trim($_POST['operating_hours_open'] ?? '08:00');
+        $newClose       = trim($_POST['operating_hours_close'] ?? '23:00');
+
         $saveSetting('store_name', $newStoreName);
         $saveSetting('delivery_fee', $newDeliveryFee);
         $saveSetting('free_delivery_threshold', $newFreeMin);
         $saveSetting('support_phone', $newSupport);
+        $saveSetting('operating_hours_open', $newOpen);
+        $saveSetting('operating_hours_close', $newClose);
 
         $storeName       = $newStoreName;
         $deliveryFee     = $newDeliveryFee;
         $freeDeliveryMin = $newFreeMin;
         $storePhone      = $newSupport;
+        $operatingOpen   = $newOpen;
+        $operatingClose  = $newClose;
 
         $success = 'Store configuration saved successfully!';
     } catch (PDOException $e) {
@@ -271,6 +280,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_store'])) {
                                 <input type="text" name="support_phone" class="form-control" required
                                        value="<?= htmlspecialchars($storePhone) ?>">
                             </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold small text-secondary">
+                                <i class="fa-solid fa-clock text-primary me-1"></i> Store Operating Hours (Timer)
+                            </label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <small class="text-muted d-block mb-1">Opening Time</small>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light"><i class="fa-regular fa-clock text-muted"></i></span>
+                                        <input type="time" name="operating_hours_open" class="form-control" value="<?= htmlspecialchars($operatingOpen) ?>" required>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted d-block mb-1">Closing Time</small>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light"><i class="fa-solid fa-clock text-muted"></i></span>
+                                        <input type="time" name="operating_hours_close" class="form-control" value="<?= htmlspecialchars($operatingClose) ?>" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted" style="font-size: 11px;">Customer orders are accepted within this daily schedule.</small>
                         </div>
 
                         <div class="pt-3 text-end border-top">

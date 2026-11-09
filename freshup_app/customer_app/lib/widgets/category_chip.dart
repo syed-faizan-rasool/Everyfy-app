@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../models/category_model.dart';
 import '../utils/app_colors.dart';
 import 'animated_widgets.dart';
+import 'app_network_image.dart';
 
 class CategoryChip extends StatelessWidget {
   final CategoryModel category;
@@ -48,21 +48,12 @@ class CategoryChip extends StatelessWidget {
                 ],
               ),
               child: ClipOval(
-                child: CachedNetworkImage(
-                  imageUrl: category.image,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => const ShimmerBox(
+                child: Center(
+                  child: AppNetworkImage(
+                    imageUrl: category.image,
                     width: 54,
                     height: 54,
-                    borderRadius: 27,
-                  ),
-                  errorWidget: (_, __, ___) => Container(
-                    color: AppColors.primaryLight,
-                    child: const Icon(
-                      Icons.eco_rounded,
-                      size: 24,
-                      color: AppColors.primary,
-                    ),
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),

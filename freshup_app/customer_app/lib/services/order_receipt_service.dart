@@ -58,7 +58,7 @@ class OrderReceiptService {
                         mainAxisSize: pw.MainAxisSize.min,
                         children: [
                           pw.Text(
-                            'FRESH',
+                            'EVERY',
                             style: pw.TextStyle(
                               font: fontBold,
                               fontSize: 16,
@@ -67,7 +67,7 @@ class OrderReceiptService {
                             ),
                           ),
                           pw.Text(
-                            'CART',
+                            'FY',
                             style: pw.TextStyle(
                               font: fontBold,
                               fontSize: 16,

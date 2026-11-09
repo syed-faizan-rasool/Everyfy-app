@@ -17,7 +17,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 try {
     if ($method === 'GET') {
-        $stmt = $pdo->query("SELECT id, name, phone, cnic, vehicle_type, vehicle_number, rating, is_online, is_active, total_deliveries, current_lat, current_lng, created_at FROM delivery_boys ORDER BY id ASC");
+        $stmt = $pdo->query("SELECT id, name, phone, email, cnic, vehicle_type, vehicle_number, rating, is_online, is_active, total_deliveries, current_lat, current_lng, created_at FROM delivery_boys ORDER BY id ASC");
         $riders = $stmt->fetchAll();
 
         // Check active order for each rider
@@ -31,6 +31,7 @@ try {
                 'id'               => (int)$r['id'],
                 'name'             => $r['name'],
                 'phone'            => $r['phone'],
+                'email'            => $r['email'] ?? '',
                 'cnic'             => $r['cnic'],
                 'vehicle_type'     => $r['vehicle_type'],
                 'vehicle_number'   => $r['vehicle_number'],
@@ -50,6 +51,7 @@ try {
         $id            = isset($data['id']) ? (int)$data['id'] : 0;
         $name          = isset($data['name']) ? trim($data['name']) : '';
         $phone         = isset($data['phone']) ? trim($data['phone']) : '';
+        $email         = isset($data['email']) ? trim($data['email']) : '';
         $password      = isset($data['password']) ? trim($data['password']) : '1234';
         $cnic          = isset($data['cnic']) ? trim($data['cnic']) : '';
         $vehicleType   = isset($data['vehicle_type']) ? trim($data['vehicle_type']) : 'Motorcycle';
@@ -62,19 +64,20 @@ try {
 
         $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
         $hashedPass = password_hash($password, PASSWORD_BCRYPT);
+        $cleanEmail = !empty($email) ? $email : null;
 
         if ($id > 0) {
-            $sql = "UPDATE delivery_boys SET name = ?, phone = ?, cnic = ?, vehicle_type = ?, vehicle_number = ?, is_active = ? WHERE id = ?";
-            $params = [$name, $cleanPhone, $cnic, $vehicleType, $vehicleNumber, $isActive, $id];
+            $sql = "UPDATE delivery_boys SET name = ?, phone = ?, email = ?, cnic = ?, vehicle_type = ?, vehicle_number = ?, is_active = ? WHERE id = ?";
+            $params = [$name, $cleanPhone, $cleanEmail, $cnic, $vehicleType, $vehicleNumber, $isActive, $id];
             if (!empty($password) && $password !== '1234') {
-                $sql = "UPDATE delivery_boys SET name = ?, phone = ?, password = ?, cnic = ?, vehicle_type = ?, vehicle_number = ?, is_active = ? WHERE id = ?";
-                $params = [$name, $cleanPhone, $hashedPass, $cnic, $vehicleType, $vehicleNumber, $isActive, $id];
+                $sql = "UPDATE delivery_boys SET name = ?, phone = ?, email = ?, password = ?, cnic = ?, vehicle_type = ?, vehicle_number = ?, is_active = ? WHERE id = ?";
+                $params = [$name, $cleanPhone, $cleanEmail, $hashedPass, $cnic, $vehicleType, $vehicleNumber, $isActive, $id];
             }
             $pdo->prepare($sql)->execute($params);
             sendSuccess(['id' => $id], 'Rider details updated');
         } else {
-            $stmt = $pdo->prepare("INSERT INTO delivery_boys (name, phone, password, cnic, vehicle_type, vehicle_number, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$name, $cleanPhone, $hashedPass, $cnic, $vehicleType, $vehicleNumber, $isActive]);
+            $stmt = $pdo->prepare("INSERT INTO delivery_boys (name, phone, email, password, cnic, vehicle_type, vehicle_number, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$name, $cleanPhone, $cleanEmail, $hashedPass, $cnic, $vehicleType, $vehicleNumber, $isActive]);
             $newId = (int)$pdo->lastInsertId();
             sendSuccess(['id' => $newId], 'Rider added successfully');
         }

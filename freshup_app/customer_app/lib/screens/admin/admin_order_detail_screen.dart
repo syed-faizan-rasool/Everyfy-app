@@ -542,14 +542,18 @@ class AdminOrderDetailScreen extends StatelessWidget {
                           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
                         ),
                         Text(
-                          '${item.quantity} x Rs ${item.product.finalPrice.toStringAsFixed(0)} · ${item.product.unit}',
+                          item.product.finalPrice > 0
+                              ? '${item.quantity} x Rs ${item.product.finalPrice.toStringAsFixed(0)} · ${item.product.unit}'
+                              : '${item.quantity} x As per Market Rate · ${item.product.unit}',
                           style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                         ),
                       ],
                     ),
                   ),
                   Text(
-                    'Rs ${(item.quantity * item.product.finalPrice).toStringAsFixed(0)}',
+                    (item.quantity * item.product.finalPrice) > 0
+                        ? 'Rs ${(item.quantity * item.product.finalPrice).toStringAsFixed(0)}'
+                        : 'As per Market Rate',
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF0D5C3A)),
                   ),
                 ],
@@ -602,8 +606,14 @@ class AdminOrderDetailScreen extends StatelessWidget {
                 ],
               ),
               Text(
-                'Rs ${order.total.toStringAsFixed(0)}',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0D5C3A)),
+                order.total > 0
+                    ? 'Rs ${order.total.toStringAsFixed(0)}'
+                    : 'As per Market Rate',
+                style: TextStyle(
+                  fontSize: order.total > 0 ? 18 : 14,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF0D5C3A),
+                ),
               ),
             ],
           ),

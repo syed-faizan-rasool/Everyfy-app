@@ -98,8 +98,15 @@ if ($pdo) {
                             </div>
                         </td>
                         <td>
-                            <div class="fw-semibold font-monospace small"><?= htmlspecialchars($r['phone']) ?></div>
-                            <small class="text-muted">Pass: 1234</small>
+                            <div class="d-flex align-items-center gap-2">
+                                <a href="tel:<?= preg_replace('/[^0-9+]/', '', $r['phone']) ?>" class="btn btn-sm btn-success rounded-pill px-2 py-1 text-decoration-none" title="Call Rider">
+                                    <i class="fa-solid fa-phone me-1"></i> Call
+                                </a>
+                                <div>
+                                    <div class="fw-semibold font-monospace small"><?= htmlspecialchars($r['phone']) ?></div>
+                                    <small class="text-muted">Pass: 1234</small>
+                                </div>
+                            </div>
                         </td>
                         <td>
                             <div class="small fw-semibold"><?= htmlspecialchars($r['vehicle_number']) ?></div>
@@ -132,6 +139,9 @@ if ($pdo) {
                         </td>
                         <td class="fw-bold"><?= $r['total_completed'] ?> trips</td>
                         <td class="text-end pe-4">
+                            <a href="tel:<?= preg_replace('/[^0-9+]/', '', $r['phone']) ?>" class="btn btn-sm btn-outline-success rounded-pill px-3 me-1">
+                                <i class="fa-solid fa-phone me-1"></i> Call Rider
+                            </a>
                             <form method="POST" class="d-inline">
                                 <input type="hidden" name="action" value="toggle_status">
                                 <input type="hidden" name="id" value="<?= $r['id'] ?>">

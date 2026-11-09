@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/order_model.dart';
 import '../../utils/app_colors.dart';
-import '../../widgets/animated_widgets.dart';
 import '../home/home_screen.dart';
 import 'order_tracking_screen.dart';
 
@@ -11,6 +10,14 @@ class OrderSuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final paymentText = order.paymentMethod.toLowerCase().contains('online')
+        ? 'Online'
+        : 'COD';
+
+    final totalDisplay = order.total > 0
+        ? 'PKR ${order.total.toStringAsFixed(0)}'
+        : 'As per Market Rate';
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -19,176 +26,185 @@ class OrderSuccessScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Spacer(),
+              const Spacer(flex: 2),
 
-              // Celebration Icon Badge
+              // 1. Large Emerald Green Checkmark Circle Matching Reference Image 1
               Container(
-                width: 104,
-                height: 104,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.success, Color(0xFF059669)],
-                  ),
+                width: 116,
+                height: 116,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF00B761), // Vibrant Emerald Green as in reference
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.success.withValues(alpha: 0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
                 ),
                 child: const Center(
-                  child: Icon(Icons.check_rounded, color: Colors.white, size: 58),
+                  child: Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 72,
+                  ),
                 ),
               ),
               const SizedBox(height: 28),
 
-              // Title
-              const Text(
-                'Order Placed Successfully!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                  letterSpacing: -0.5,
-                ),
+              // 2. Title: Order Placed! 🎉
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Order Placed! ',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF1E293B),
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  Text(
+                    '🎉',
+                    style: TextStyle(fontSize: 24),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
 
+              // 3. Subtitle: Thank you! We're getting your order ready.
               const Text(
-                'Thank you for ordering with Everyfy. Your groceries are being carefully handpicked and packed.',
+                "Thank you! We're getting your order ready.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                  height: 1.45,
+                  color: Color(0xFF64748B),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 36),
 
-              // Order Details Card
+              // 4. Details List / Card Matching Reference Image 1
               Container(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.cardBorder),
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFF1F5F9)),
                 ),
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Order Number',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                        ),
-                        Text(
-                          '#${order.orderNumber}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 14,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Divider(color: AppColors.divider),
-                    ),
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Estimated Delivery',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                        ),
-                        Row(
-                          children: [
-                            Icon(Icons.bolt_rounded, size: 16, color: AppColors.accent),
-                            SizedBox(width: 2),
-                            Text(
-                              '30 - 45 Mins',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 14,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Divider(color: AppColors.divider),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Total Paid',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                        ),
-                        Text(
-                          'Rs ${order.total.toStringAsFixed(0)}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
+                    _buildDetailRow('Order #', order.orderNumber),
+                    const SizedBox(height: 14),
+                    _buildDetailRow('Payment', paymentText),
+                    const SizedBox(height: 14),
+                    _buildDetailRow('Est. Delivery', '15–25 min'),
+                    const SizedBox(height: 14),
+                    _buildDetailRow(
+                      'Total',
+                      totalDisplay,
+                      isBold: true,
+                      valueColor: AppColors.primary,
+                      fontSize: 16,
                     ),
                   ],
                 ),
               ),
 
-              const Spacer(),
+              const Spacer(flex: 3),
 
-              // Action Buttons
-              BouncingButton(
-                onTap: () => Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => OrderTrackingScreen(order: order)),
-                ),
-                child: ElevatedButton.icon(
-                  onPressed: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => OrderTrackingScreen(order: order)),
+              // 5. Primary Button: Track My Order
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => OrderTrackingScreen(order: order),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary, // Brand Green
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                  icon: const Icon(Icons.location_searching_rounded, size: 18),
-                  label: const Text('Track Order Status'),
+                  child: const Text(
+                    'Track My Order',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              BouncingButton(
-                onTap: () => Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const HomeScreen()),
-                  (r) => false,
-                ),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pushAndRemoveUntil(
+
+              // 6. Secondary Button: Continue Shopping
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(builder: (_) => const HomeScreen()),
                       (r) => false,
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Text('Continue Shopping'),
+                    backgroundColor: Colors.white,
+                  ),
+                  child: const Text(
+                    'Continue Shopping',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1E293B),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDetailRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    double fontSize = 14,
+    Color? valueColor,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+            color: const Color(0xFF64748B),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
+            color: valueColor ?? const Color(0xFF1E293B),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -23,6 +23,27 @@ extension OrderStatusX on OrderStatus {
         return 'Cancelled';
     }
   }
+
+  String get toDbString {
+    switch (this) {
+      case OrderStatus.placed:
+        return 'placed';
+      case OrderStatus.confirmed:
+        return 'confirmed';
+      case OrderStatus.preparing:
+        return 'preparing';
+      case OrderStatus.ready:
+        return 'ready';
+      case OrderStatus.pickedUp:
+        return 'picked_up';
+      case OrderStatus.onTheWay:
+        return 'on_the_way';
+      case OrderStatus.delivered:
+        return 'delivered';
+      case OrderStatus.cancelled:
+        return 'cancelled';
+    }
+  }
 }
 
 class OrderModel {

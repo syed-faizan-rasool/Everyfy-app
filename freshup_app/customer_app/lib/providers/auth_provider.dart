@@ -13,6 +13,7 @@ class AuthProvider extends ChangeNotifier {
   static const String _kRole = 'auth_role';
   static const String _kToken = 'auth_token';
   static const String _kLoginTimestamp = 'auth_login_timestamp';
+  static const String _kAvatar = 'auth_avatar';
   static const int _sessionValidityDays = 7; // Auto-login valid for 7 days
 
   bool _isLoggedIn = false;
@@ -20,6 +21,7 @@ class AuthProvider extends ChangeNotifier {
   String _name = '';
   String _phone = '';
   String _email = '';
+  String _avatar = '';
   AppRole _role = AppRole.customer;
   AddressModel? _selectedAddress;
   String? _errorMessage;
@@ -29,6 +31,7 @@ class AuthProvider extends ChangeNotifier {
   String get name => _name.isNotEmpty ? _name : (_role == AppRole.admin ? 'Store Admin' : (_role == AppRole.rider ? 'Delivery Rider' : 'Customer'));
   String get phone => _phone;
   String get email => _email;
+  String get avatar => _avatar;
   AppRole get role => _role;
   String? get errorMessage => _errorMessage;
   AddressModel? get selectedAddress => _selectedAddress;
@@ -65,6 +68,7 @@ class AuthProvider extends ChangeNotifier {
       _name = prefs.getString(_kName) ?? '';
       _phone = prefs.getString(_kPhone) ?? '';
       _email = prefs.getString(_kEmail) ?? '';
+      _avatar = prefs.getString(_kAvatar) ?? '';
 
       final roleStr = prefs.getString(_kRole) ?? 'customer';
       if (roleStr == 'admin') {
@@ -104,6 +108,7 @@ class AuthProvider extends ChangeNotifier {
       await prefs.setString(_kName, _name);
       await prefs.setString(_kPhone, _phone);
       await prefs.setString(_kEmail, _email);
+      await prefs.setString(_kAvatar, _avatar);
       await prefs.setString(_kRole, _role.name);
       if (token != null && token.isNotEmpty) {
         await prefs.setString(_kToken, token);
@@ -281,6 +286,30 @@ class AuthProvider extends ChangeNotifier {
       await prefs.remove(_kLoginTimestamp);
     } catch (_) {}
 
+    notifyListeners();
+  }
+
+  Future<void> updateAvatar(String pathOrUrl) async {
+    _avatar = pathOrUrl;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kAvatar, pathOrUrl);
+    } catch (_) {}
+    notifyListeners();
+  }
+
+  Future<void> updateProfile({String? name, String? phone, String? email, String? avatar}) async {
+    if (name != null && name.isNotEmpty) _name = name;
+    if (phone != null && phone.isNotEmpty) _phone = phone;
+    if (email != null && email.isNotEmpty) _email = email;
+    if (avatar != null && avatar.isNotEmpty) _avatar = avatar;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (name != null && name.isNotEmpty) await prefs.setString(_kName, name);
+      if (phone != null && phone.isNotEmpty) await prefs.setString(_kPhone, phone);
+      if (email != null && email.isNotEmpty) await prefs.setString(_kEmail, email);
+      if (avatar != null && avatar.isNotEmpty) await prefs.setString(_kAvatar, avatar);
+    } catch (_) {}
     notifyListeners();
   }
 }

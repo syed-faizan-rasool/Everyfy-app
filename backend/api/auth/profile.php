@@ -19,8 +19,9 @@ $userId = (int)$auth['sub'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = getRequestData();
-    $name  = isset($data['name']) ? trim($data['name']) : null;
-    $email = isset($data['email']) ? trim($data['email']) : null;
+    $name   = isset($data['name']) ? trim($data['name']) : null;
+    $email  = isset($data['email']) ? trim($data['email']) : null;
+    $avatar = isset($data['profile_image']) ? trim($data['profile_image']) : (isset($data['avatar']) ? trim($data['avatar']) : null);
 
     $updates = [];
     $params  = [];
@@ -32,6 +33,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($email !== null) {
         $updates[] = "email = ?";
         $params[] = $email;
+    }
+    if ($avatar !== null) {
+        $updates[] = "profile_image = ?";
+        $params[] = $avatar;
     }
 
     if (!empty($updates)) {

@@ -61,6 +61,7 @@ class _AdminMainNavigationScreenState extends State<AdminMainNavigationScreen> {
           ],
         ),
         child: SafeArea(
+          top: false,
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
             onTap: _switchTab,

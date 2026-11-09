@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Meta (Facebook) App ID & Client Token for EVERYFY App Events Tracking -->
+    <!-- Replace with your actual Meta App ID & Client Token from Meta Events Manager -->
+    <string name="facebook_app_id">100000000000000</string>
+    <string name="facebook_client_token">00000000000000000000000000000000</string>
+    <string name="fb_login_protocol_scheme">fb100000000000000</string>
+</resources>
+

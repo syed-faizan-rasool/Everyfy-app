@@ -2,6 +2,7 @@
 $pageTitle = 'Categories';
 $pageHeading = 'Product Categories';
 require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/../helpers/upload.php';
 
 $pdo = Database::getConnection();
 $message = '';
@@ -14,6 +15,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $name      = trim($_POST['name'] ?? '');
         $image     = trim($_POST['image'] ?? '');
         $sortOrder = (int)($_POST['sort_order'] ?? 0);
+
+        // Handle uploaded image file
+        if (isset($_FILES['image_file']) && $_FILES['image_file']['error'] === UPLOAD_ERR_OK) {
+            $up = UploadHelper::uploadImage('image_file', 'categories');
+            if ($up['success']) {
+                $image = $up['url'];
+            }
+        }
+
+        // On edit: if no file uploaded and image field is empty, retain existing image
+        if ($id > 0 && empty($image)) {
+            $existing = $pdo->prepare("SELECT image FROM categories WHERE id = ?");
+            $existing->execute([$id]);
+            $image = $existing->fetchColumn() ?: '';
+        }
+
+        if (empty($image)) {
+            $image = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500';
+        }
 
         try {
             if ($id > 0) {
@@ -69,7 +89,7 @@ if ($pdo) {
         <div class="col-md-4 col-sm-6">
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100">
                 <div style="height: 140px; overflow: hidden; position: relative;">
-                    <img src="<?= htmlspecialchars($cat['image']) ?>" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                    <img src="<?= htmlspecialchars(getAdminImageUrl($cat['image'])) ?>" alt="" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null;this.src='https://placehold.co/200x150?text=Category';">
                     <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);"></div>
                     <div style="position: absolute; bottom: 12px; left: 16px; color: white;">
                         <h5 class="fw-bold mb-0"><?= htmlspecialchars($cat['name']) ?></h5>
@@ -78,10 +98,57 @@ if ($pdo) {
                 </div>
                 <div class="card-body p-3 d-flex justify-content-between align-items-center">
                     <span class="small text-muted">Order: #<?= $cat['sort_order'] ?></span>
-                    <form method="POST" onsubmit="return confirm('Delete this category? Associated products will be affected.');">
-                        <input type="hidden" name="action" value="delete_category">
-                        <input type="hidden" name="id" value="<?= $cat['id'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">Delete</button>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-sm btn-light border rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#editCatModal<?= $cat['id'] ?>">Edit</button>
+                        <form method="POST" onsubmit="return confirm('Delete this category? Associated products will be affected.');" class="d-inline">
+                            <input type="hidden" name="action" value="delete_category">
+                            <input type="hidden" name="id" value="<?= $cat['id'] ?>">
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Category Modal -->
+        <div class="modal fade" id="editCatModal<?= $cat['id'] ?>" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content rounded-4 border-0">
+                    <div class="modal-header border-bottom">
+                        <h6 class="modal-title fw-bold">Edit Category</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="modal-body">
+                            <input type="hidden" name="action" value="save_category">
+                            <input type="hidden" name="id" value="<?= $cat['id'] ?>">
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Category Name</label>
+                                <input type="text" name="name" class="form-control rounded-3" value="<?= htmlspecialchars($cat['name']) ?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold"><i class="fa-solid fa-cloud-arrow-up me-1 text-primary"></i> Upload New Image File</label>
+                                <input type="file" name="image_file" class="form-control rounded-3" accept="image/*">
+                                <small class="text-muted">PNG, JPG, WEBP up to 5MB</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Or Direct Image URL</label>
+                                <input type="text" name="image" class="form-control rounded-3" value="<?= htmlspecialchars($cat['image']) ?>" placeholder="https://... or uploads/...">
+                            </div>
+                            <div class="mb-3 p-2 border rounded-3 bg-light d-flex align-items-center gap-3">
+                                <img src="<?= htmlspecialchars(getAdminImageUrl($cat['image'])) ?>" class="rounded-2" style="width: 48px; height: 48px; object-fit: cover;" onerror="this.onerror=null;this.src='https://placehold.co/100x100?text=No+Image';">
+                                <small class="text-muted">Leave file and URL blank if keeping current image.</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Display Sort Order</label>
+                                <input type="number" name="sort_order" class="form-control rounded-3" value="<?= $cat['sort_order'] ?>">
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0">
+                            <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary rounded-3 px-4">Save Changes</button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -97,15 +164,21 @@ if ($pdo) {
                 <h6 class="modal-title fw-bold">Add Category</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="save_category">
+                    <input type="hidden" name="id" value="0">
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Category Name</label>
                         <input type="text" name="name" class="form-control rounded-3" placeholder="e.g. Organic Meat & Seafood" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Image URL</label>
+                        <label class="form-label small fw-bold"><i class="fa-solid fa-cloud-arrow-up me-1 text-primary"></i> Upload Category Image File</label>
+                        <input type="file" name="image_file" class="form-control rounded-3" accept="image/*">
+                        <small class="text-muted">Select image file from your device</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Or Direct Image URL</label>
                         <input type="text" name="image" class="form-control rounded-3" placeholder="https://images.unsplash.com/...">
                     </div>
                     <div class="mb-3">

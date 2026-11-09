@@ -32,6 +32,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         }
 
+        // On edit: if no new file uploaded and image field is empty, retain existing image
+        if ($id > 0 && empty($image)) {
+            $existing = $pdo->prepare("SELECT image FROM products WHERE id = ?");
+            $existing->execute([$id]);
+            $image = $existing->fetchColumn() ?: '';
+        }
+
         if (empty($image)) {
             $image = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500';
         }
@@ -108,7 +115,7 @@ if ($pdo) {
                     <tr>
                         <td class="ps-4">
                             <div class="d-flex align-items-center gap-3">
-                                <img src="<?= htmlspecialchars($p['image']) ?>" alt="" class="rounded-3" style="width: 48px; height: 48px; object-fit: cover;">
+                                <img src="<?= htmlspecialchars(getAdminImageUrl($p['image'])) ?>" alt="" class="rounded-3" style="width: 48px; height: 48px; object-fit: cover;" onerror="this.onerror=null;this.src='https://placehold.co/100x100?text=No+Image';">
                                 <div>
                                     <div class="fw-bold"><?= htmlspecialchars($p['name']) ?></div>
                                     <small class="text-muted"><?= htmlspecialchars($p['unit']) ?></small>
@@ -186,9 +193,24 @@ if ($pdo) {
                                                 <label class="form-label small fw-bold">Stock Quantity</label>
                                                 <input type="number" name="stock_qty" class="form-control" value="<?= $p['stock_qty'] ?>">
                                             </div>
-                                            <div class="col-md-8">
-                                                <label class="form-label small fw-bold">Image URL</label>
-                                                <input type="text" name="image" class="form-control" value="<?= htmlspecialchars($p['image']) ?>">
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold"><i class="fa-solid fa-cloud-arrow-up me-1 text-primary"></i> Upload New Image File</label>
+                                                <input type="file" name="image_file" class="form-control" accept="image/*">
+                                                <small class="text-muted">Direct upload from device</small>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold">Or Direct Image URL</label>
+                                                <input type="text" name="image" class="form-control" value="<?= htmlspecialchars($p['image']) ?>" placeholder="https://... or uploads/...">
+                                                <small class="text-muted">Web link or existing path</small>
+                                            </div>
+                                            <div class="col-12">
+                                                <div class="p-2 border rounded-3 bg-light d-flex align-items-center gap-3">
+                                                    <img src="<?= htmlspecialchars(getAdminImageUrl($p['image'])) ?>" class="rounded-2" style="width: 48px; height: 48px; object-fit: cover;" onerror="this.onerror=null;this.src='https://placehold.co/100x100?text=No+Image';">
+                                                    <div>
+                                                        <div class="small fw-semibold text-dark">Current Product Image</div>
+                                                        <div class="small text-muted">Leave file and URL blank if you want to keep the current image unchanged.</div>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div class="col-12">
                                                 <label class="form-label small fw-bold">Description</label>
@@ -264,9 +286,15 @@ if ($pdo) {
                             <label class="form-label small fw-bold">Stock Quantity</label>
                             <input type="number" name="stock_qty" class="form-control" value="50">
                         </div>
-                        <div class="col-md-8">
-                            <label class="form-label small fw-bold">Image URL</label>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold"><i class="fa-solid fa-cloud-arrow-up me-1 text-primary"></i> Upload Image File</label>
+                            <input type="file" name="image_file" class="form-control" accept="image/*">
+                            <small class="text-muted">Upload from computer or phone</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Or Direct Image URL</label>
                             <input type="text" name="image" class="form-control" placeholder="https://images.unsplash.com/...">
+                            <small class="text-muted">Web link or existing path</small>
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-bold">Description</label>
