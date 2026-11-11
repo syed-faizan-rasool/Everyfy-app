@@ -8,6 +8,10 @@ import '../providers/cart_provider.dart';
 import '../screens/address/address_screen.dart';
 import '../screens/auth/unified_auth_screen.dart';
 import '../screens/cart/cart_screen.dart';
+import '../screens/home/home_screen.dart';
+import '../screens/order/custom_order_screen.dart';
+import '../screens/order/order_history_screen.dart';
+import '../screens/profile/profile_screen.dart';
 import '../screens/role_selection_screen.dart';
 import '../utils/app_colors.dart';
 import 'app_network_image.dart';
@@ -117,20 +121,52 @@ class EveryfyDrawer extends StatelessWidget {
               children: [
                 _buildDrawerItem(
                   icon: Icons.storefront_rounded,
-                  title: 'Grocery Catalog',
-                  subtitle: 'Fresh fruits, vegetables & grocery',
+                  title: 'Shop & Groceries',
+                  subtitle: 'Fresh fruits, vegetables, food & bakery',
                   onTap: () {
                     Navigator.pop(context);
-                    onSwitchTab?.call(1);
+                    if (onSwitchTab != null) {
+                      onSwitchTab!(0);
+                    } else {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const HomeScreen()),
+                        (r) => false,
+                      );
+                    }
                   },
                 ),
                 _buildDrawerItem(
-                  icon: Icons.restaurant_rounded,
-                  title: 'Food & Dining',
-                  subtitle: 'Gojra special treats, bakery & snacks',
+                  icon: Icons.receipt_long_rounded,
+                  title: 'My Orders',
+                  subtitle: 'Live order tracking & history',
                   onTap: () {
                     Navigator.pop(context);
-                    onSwitchTab?.call(0);
+                    if (onSwitchTab != null) {
+                      onSwitchTab!(1);
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const OrderHistoryScreen()),
+                      );
+                    }
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.shopping_cart_outlined,
+                  title: 'Shopping Cart',
+                  subtitle: 'View cart items & checkout',
+                  badge: cart.itemCount > 0 ? '${cart.itemCount}' : null,
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (onSwitchTab != null) {
+                      onSwitchTab!(2);
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CartScreen()),
+                      );
+                    }
                   },
                 ),
                 _buildDrawerItem(
@@ -140,28 +176,14 @@ class EveryfyDrawer extends StatelessWidget {
                   badge: 'NEW',
                   onTap: () {
                     Navigator.pop(context);
-                    onSwitchTab?.call(2); // Switch to Custom tab
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.receipt_long_rounded,
-                  title: 'My Orders',
-                  subtitle: 'Live order tracking & history',
-                  onTap: () {
-                    Navigator.pop(context);
-                    onSwitchTab?.call(3);
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.shopping_cart_outlined,
-                  title: 'Shopping Cart',
-                  badge: cart.itemCount > 0 ? '${cart.itemCount}' : null,
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const CartScreen()),
-                    );
+                    if (onSwitchTab != null) {
+                      onSwitchTab!(3);
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CustomOrderScreen()),
+                      );
+                    }
                   },
                 ),
                 _buildDrawerItem(
@@ -217,7 +239,14 @@ class EveryfyDrawer extends StatelessWidget {
                   title: 'Profile Settings',
                   onTap: () {
                     Navigator.pop(context);
-                    onSwitchTab?.call(4);
+                    if (onSwitchTab != null) {
+                      onSwitchTab!(4);
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                      );
+                    }
                   },
                 ),
                 _buildDrawerItem(

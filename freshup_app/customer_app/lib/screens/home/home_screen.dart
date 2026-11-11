@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import '../../widgets/everyfy_drawer.dart';
 import '../../services/meta_analytics_service.dart';
 import 'package:flutter/material.dart';
@@ -8,10 +9,12 @@ import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/animated_widgets.dart';
+import '../../widgets/category_chip.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/promotional_carousel.dart';
 import '../../widgets/section_title.dart';
 import '../address/address_screen.dart';
+import '../cart/cart_screen.dart';
 import '../order/custom_order_screen.dart';
 import '../order/order_history_screen.dart';
 import '../profile/profile_screen.dart';
@@ -26,7 +29,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _navIndex = 1; // Default to Grocery (Shop)
+  int _navIndex = 0; // Default to Shop (Tab 0)
 
   @override
   void initState() {
@@ -44,38 +47,149 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final screens = [
       _HomeTab(
-        foodOnly: true,
         onSwitchTab: (i) => setState(() => _navIndex = i),
       ),
-      _HomeTab(
-        foodOnly: false,
-        onSwitchTab: (i) => setState(() => _navIndex = i),
+      const OrderHistoryScreen(embedded: true),
+      CartScreen(
+        embedded: true,
+        onStartShopping: () => setState(() => _navIndex = 0),
       ),
       const CustomOrderScreen(embedded: true),
-      const OrderHistoryScreen(embedded: true),
       const ProfileScreen(embedded: true),
     ];
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      drawer: EveryfyDrawer(onSwitchTab: (i) => setState(() => _navIndex = i)),
-      body: SafeArea(top: false, child: screens[_navIndex]),
-      bottomNavigationBar: _buildCustomBottomBar(),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
+        drawer: EveryfyDrawer(onSwitchTab: (i) => setState(() => _navIndex = i)),
+        body: SafeArea(top: false, child: screens[_navIndex]),
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Floating Live Cart Strip (shown on Shop tab when cart has items)
+            if (_navIndex == 0)
+              Consumer<CartProvider>(
+                builder: (ctx, cart, _) {
+                  if (cart.isEmpty) return const SizedBox.shrink();
+                  return Container(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => setState(() => _navIndex = 2),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF0D6843), Color(0xFF15803D)],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(7),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.2),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.shopping_bag_outlined,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '${cart.itemCount} ${cart.itemCount == 1 ? 'ITEM' : 'ITEMS'}',
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.85),
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Rs ${cart.subtotal.toStringAsFixed(0)}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.22),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'View Cart',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    SizedBox(width: 4),
+                                    Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 16),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            _buildCustomBottomBar(),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildCustomBottomBar() {
-    const activeColor = Color(0xFF6C3EB8); // Purple matching reference in Image 6
-    const inactiveColor = Color(0xFF8E8E93);
+    const activeColor = AppColors.primary; // Everyfy Emerald Green
+    const inactiveColor = Color(0xFF64748B);
 
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 14,
-            offset: Offset(0, -3),
+            color: Color(0x0D000000),
+            blurRadius: 16,
+            offset: Offset(0, -4),
           ),
         ],
         border: Border(top: BorderSide(color: Color(0xFFEEEEEE), width: 1)),
@@ -83,81 +197,88 @@ class _HomeScreenState extends State<HomeScreen> {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 62,
+          height: 64,
           child: Row(
             children: [
-              // Tab 0: Food
+              // Tab 0: Shop
               Expanded(
                 child: _buildNavItem(
                   index: 0,
-                  icon: Icons.restaurant_outlined,
-                  activeIcon: Icons.restaurant_rounded,
-                  label: 'Food',
+                  icon: Icons.storefront_outlined,
+                  activeIcon: Icons.storefront_rounded,
+                  label: 'Shop',
                   activeColor: activeColor,
                   inactiveColor: inactiveColor,
                 ),
               ),
-              // Tab 1: Grocery
+              // Tab 1: Orders
+              Expanded(
+                child: _buildNavItem(
+                  index: 1,
+                  icon: Icons.receipt_long_outlined,
+                  activeIcon: Icons.receipt_long_rounded,
+                  label: 'Orders',
+                  activeColor: activeColor,
+                  inactiveColor: inactiveColor,
+                ),
+              ),
+              // Tab 2: Cart (Live cart screen & real-time badge)
               Expanded(
                 child: Consumer<CartProvider>(
                   builder: (_, cart, __) => _buildNavItem(
-                    index: 1,
+                    index: 2,
                     icon: Icons.shopping_cart_outlined,
                     activeIcon: Icons.shopping_cart_rounded,
-                    label: 'Grocery',
+                    label: 'Cart',
                     badgeCount: cart.itemCount,
                     activeColor: activeColor,
                     inactiveColor: inactiveColor,
                   ),
                 ),
               ),
-              // Tab 2: Custom (Center Elevated Purple Button with +)
+              // Tab 3: Custom (Elevated Circular Button with +)
               Expanded(
-                child: InkWell(
-                  onTap: () => setState(() => _navIndex = 2),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: activeColor,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: activeColor.withValues(alpha: 0.35),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => setState(() => _navIndex = 3),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 64,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: _navIndex == 3 ? AppColors.primary : const Color(0xFF0D6843),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.35),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Icon(Icons.add_rounded, color: Colors.white, size: 26),
-                        ),
+                            child: const Center(
+                              child: Icon(Icons.add_rounded, color: Colors.white, size: 26),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Custom',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: _navIndex == 3 ? FontWeight.w800 : FontWeight.w600,
+                              color: _navIndex == 3 ? activeColor : inactiveColor,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Custom',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: _navIndex == 2 ? FontWeight.w800 : FontWeight.w600,
-                          color: _navIndex == 2 ? activeColor : inactiveColor,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-              // Tab 3: Orders
-              Expanded(
-                child: _buildNavItem(
-                  index: 3,
-                  icon: Icons.receipt_long_outlined,
-                  activeIcon: Icons.receipt_long_rounded,
-                  label: 'Orders',
-                  activeColor: activeColor,
-                  inactiveColor: inactiveColor,
                 ),
               ),
               // Tab 4: Profile
@@ -190,37 +311,69 @@ class _HomeScreenState extends State<HomeScreen> {
     final isSelected = _navIndex == index;
     final color = isSelected ? activeColor : inactiveColor;
 
-    return InkWell(
-      onTap: () => setState(() => _navIndex = index),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          badgeCount > 0
-              ? Badge(
-                  backgroundColor: AppColors.accent,
-                  label: Text('$badgeCount', style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
-                  child: Icon(isSelected ? (activeIcon ?? icon) : icon, color: color, size: 23),
-                )
-              : Icon(isSelected ? (activeIcon ?? icon) : icon, color: color, size: 23),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-              color: color,
-            ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => setState(() => _navIndex = index),
+        child: SizedBox(
+          width: double.infinity,
+          height: 64,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: isSelected
+                    ? const EdgeInsets.symmetric(horizontal: 14, vertical: 3)
+                    : EdgeInsets.zero,
+                decoration: isSelected
+                    ? BoxDecoration(
+                        color: activeColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(16),
+                      )
+                    : null,
+                child: badgeCount > 0
+                    ? Badge(
+                        backgroundColor: AppColors.accent,
+                        label: Text(
+                          '$badgeCount',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        child: Icon(
+                          isSelected ? (activeIcon ?? icon) : icon,
+                          color: color,
+                          size: 23,
+                        ),
+                      )
+                    : Icon(
+                        isSelected ? (activeIcon ?? icon) : icon,
+                        color: color,
+                        size: 23,
+                      ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                  color: color,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
 class _HomeTab extends StatefulWidget {
-  final bool foodOnly;
   final ValueChanged<int>? onSwitchTab;
-  const _HomeTab({this.foodOnly = false, this.onSwitchTab});
+  const _HomeTab({this.onSwitchTab});
 
   @override
   State<_HomeTab> createState() => _HomeTabState();
@@ -271,7 +424,7 @@ class _HomeTabState extends State<_HomeTab> {
     if (renderBox is! RenderBox || !renderBox.hasSize) return;
 
     int newIndex = 0;
-    const double stickyHeaderHeight = 48.0;
+    const double stickyHeaderHeight = 96.0;
 
     for (int i = 0; i < categories.length; i++) {
       final key = _categoryHeaderKeys[categories[i].id];
@@ -325,7 +478,7 @@ class _HomeTabState extends State<_HomeTab> {
           renderBox.hasSize) {
         final pos = box.localToGlobal(Offset.zero, ancestor: renderBox);
         final currentOffset = _scrollController.offset;
-        const double stickyHeaderHeight = 48.0;
+        const double stickyHeaderHeight = 96.0;
         final targetOffset =
             (currentOffset + pos.dy - stickyHeaderHeight - 8.0).clamp(
           0.0,
@@ -458,22 +611,45 @@ class _HomeTabState extends State<_HomeTab> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Row(
+                                Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
-                                      'Deliver To',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w600,
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF97316),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.bolt_rounded, size: 11, color: Colors.white),
+                                          SizedBox(width: 1.5),
+                                          Text(
+                                            '10-15 MINS',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    SizedBox(width: 3),
-                                    Icon(
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      address?.label.isNotEmpty == true ? address!.label : 'Home',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    const Icon(
                                       Icons.keyboard_arrow_down_rounded,
-                                      color: Colors.white70,
-                                      size: 16,
+                                      color: Colors.white,
+                                      size: 15,
                                     ),
                                   ],
                                 ),
@@ -481,14 +657,13 @@ class _HomeTabState extends State<_HomeTab> {
                                 Text(
                                   address != null
                                       ? (address.area.isNotEmpty
-                                          ? ' - '
-                                          : ' - ')
-                                      : 'Everyfy - Gojra',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: -0.2,
+                                          ? '${address.area}, ${address.city}'
+                                          : address.city)
+                                      : 'Gojra, Punjab',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -772,49 +947,34 @@ class _HomeTabState extends State<_HomeTab> {
               SliverPersistentHeader(
                 pinned: true,
                 delegate: _StickyCategoryHeaderDelegate(
-                  height: 48.0,
+                  height: 96.0,
                   child: Container(
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       border: Border(
                         bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1.2),
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x0A000000),
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: ListView.separated(
                       controller: _tabScrollController,
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       itemCount: categories.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 18),
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
                       itemBuilder: (_, i) {
                         final cat = categories[i];
                         final isSelected = _activeCategoryIndex == i;
-                        return InkWell(
+                        return CategoryChip(
+                          category: cat,
+                          isSelected: isSelected,
                           onTap: () => _onCategoryTabTapped(i, cat.id),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                child: Text(
-                                  cat.name,
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                    color: isSelected ? AppColors.primary : const Color(0xFF64748B),
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                height: 2.5,
-                                width: isSelected ? 24 : 0,
-                                decoration: BoxDecoration(
-                                  color: isSelected ? AppColors.primary : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                            ],
-                          ),
                         );
                       },
                     ),
@@ -968,7 +1128,7 @@ class _StickyCategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   _StickyCategoryHeaderDelegate({
     required this.child,
-    this.height = 48.0,
+    this.height = 96.0,
   });
 
   @override
