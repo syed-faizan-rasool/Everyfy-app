@@ -153,23 +153,6 @@ class EveryfyDrawer extends StatelessWidget {
                   },
                 ),
                 _buildDrawerItem(
-                  icon: Icons.shopping_cart_outlined,
-                  title: 'Shopping Cart',
-                  subtitle: 'View cart items & checkout',
-                  badge: cart.itemCount > 0 ? '${cart.itemCount}' : null,
-                  onTap: () {
-                    Navigator.pop(context);
-                    if (onSwitchTab != null) {
-                      onSwitchTab!(2);
-                    } else {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const CartScreen()),
-                      );
-                    }
-                  },
-                ),
-                _buildDrawerItem(
                   icon: Icons.add_circle_outline_rounded,
                   title: 'Custom Grocery Order',
                   subtitle: "Can't find an item? We'll pick it up",
@@ -177,11 +160,28 @@ class EveryfyDrawer extends StatelessWidget {
                   onTap: () {
                     Navigator.pop(context);
                     if (onSwitchTab != null) {
-                      onSwitchTab!(3);
+                      onSwitchTab!(2);
                     } else {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const CustomOrderScreen()),
+                      );
+                    }
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.shopping_cart_outlined,
+                  title: 'Shopping Cart',
+                  subtitle: 'View cart items & checkout',
+                  badge: cart.itemCount > 0 ? '${cart.itemCount}' : null,
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (onSwitchTab != null) {
+                      onSwitchTab!(3);
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CartScreen()),
                       );
                     }
                   },

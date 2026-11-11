@@ -50,24 +50,28 @@ class _HomeScreenState extends State<HomeScreen> {
         onSwitchTab: (i) => setState(() => _navIndex = i),
       ),
       const OrderHistoryScreen(embedded: true),
+      const CustomOrderScreen(embedded: true),
       CartScreen(
         embedded: true,
         onStartShopping: () => setState(() => _navIndex = 0),
       ),
-      const CustomOrderScreen(embedded: true),
       const ProfileScreen(embedded: true),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
+        statusBarColor: AppColors.primary,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
       ),
       child: Scaffold(
         backgroundColor: const Color(0xFFF8FAFC),
         drawer: EveryfyDrawer(onSwitchTab: (i) => setState(() => _navIndex = i)),
-        body: SafeArea(top: false, child: screens[_navIndex]),
+        body: SafeArea(
+          top: true,
+          bottom: false,
+          child: screens[_navIndex],
+        ),
         bottomNavigationBar: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -81,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: () => setState(() => _navIndex = 2),
+                        onTap: () => setState(() => _navIndex = 3),
                         borderRadius: BorderRadius.circular(16),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -222,26 +226,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   inactiveColor: inactiveColor,
                 ),
               ),
-              // Tab 2: Cart (Live cart screen & real-time badge)
-              Expanded(
-                child: Consumer<CartProvider>(
-                  builder: (_, cart, __) => _buildNavItem(
-                    index: 2,
-                    icon: Icons.shopping_cart_outlined,
-                    activeIcon: Icons.shopping_cart_rounded,
-                    label: 'Cart',
-                    badgeCount: cart.itemCount,
-                    activeColor: activeColor,
-                    inactiveColor: inactiveColor,
-                  ),
-                ),
-              ),
-              // Tab 3: Custom (Elevated Circular Button with +)
+              // Tab 2: Custom (Center Elevated Circular Button with +)
               Expanded(
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () => setState(() => _navIndex = 3),
+                    onTap: () => setState(() => _navIndex = 2),
                     child: SizedBox(
                       width: double.infinity,
                       height: 64,
@@ -252,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             width: 42,
                             height: 42,
                             decoration: BoxDecoration(
-                              color: _navIndex == 3 ? AppColors.primary : const Color(0xFF0D6843),
+                              color: _navIndex == 2 ? AppColors.primary : const Color(0xFF0D6843),
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
@@ -271,13 +261,27 @@ class _HomeScreenState extends State<HomeScreen> {
                             'Custom',
                             style: TextStyle(
                               fontSize: 10.5,
-                              fontWeight: _navIndex == 3 ? FontWeight.w800 : FontWeight.w600,
-                              color: _navIndex == 3 ? activeColor : inactiveColor,
+                              fontWeight: _navIndex == 2 ? FontWeight.w800 : FontWeight.w600,
+                              color: _navIndex == 2 ? activeColor : inactiveColor,
                             ),
                           ),
                         ],
                       ),
                     ),
+                  ),
+                ),
+              ),
+              // Tab 3: Cart (Live cart screen & real-time badge)
+              Expanded(
+                child: Consumer<CartProvider>(
+                  builder: (_, cart, __) => _buildNavItem(
+                    index: 3,
+                    icon: Icons.shopping_cart_outlined,
+                    activeIcon: Icons.shopping_cart_rounded,
+                    label: 'Cart',
+                    badgeCount: cart.itemCount,
+                    activeColor: activeColor,
+                    inactiveColor: inactiveColor,
                   ),
                 ),
               ),
@@ -580,7 +584,7 @@ class _HomeTabState extends State<_HomeTab> {
                     ),
                   ],
                 ),
-                padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 8, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -936,8 +940,8 @@ class _HomeTabState extends State<_HomeTab> {
                   child: PromotionalCarousel(
                     onBrowseCategories: () =>
                         _onCategoryTabTapped(0, categories.first.id),
-                    onOpenWhatsApp: () => widget.onSwitchTab?.call(3),
-                    onOpenCart: () => widget.onSwitchTab?.call(2),
+                    onOpenWhatsApp: () => widget.onSwitchTab?.call(2),
+                    onOpenCart: () => widget.onSwitchTab?.call(3),
                     onViewTopDeals: () => _scrollToTab(0),
                   ),
                 ),
