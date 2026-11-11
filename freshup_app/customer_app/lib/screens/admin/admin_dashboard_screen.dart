@@ -75,7 +75,7 @@ class AdminDashboardScreen extends StatelessWidget {
     final isOpen = admin.settings.isOpen;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -91,29 +91,30 @@ class AdminDashboardScreen extends StatelessWidget {
         children: [
           // Store Hub Avatar
           Container(
-            width: 48,
-            height: 48,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
               ),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: const Center(
-              child: Icon(Icons.storefront_rounded, color: Colors.white, size: 26),
+              child: Icon(Icons.storefront_rounded, color: Colors.white, size: 24),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 10),
 
           // Store Name & Status Text
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   admin.settings.storeName,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 15.5,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF0F172A),
                     letterSpacing: -0.3,
@@ -121,24 +122,29 @@ class AdminDashboardScreen extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 8,
-                      height: 8,
+                      width: 7,
+                      height: 7,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isOpen ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      isOpen ? 'STORE OPEN (Accepting Orders)' : 'STORE PAUSED (Closed)',
-                      style: TextStyle(
-                        color: isOpen ? const Color(0xFF047857) : const Color(0xFFB91C1C),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(
+                        isOpen ? 'STORE OPEN (Accepting)' : 'STORE CLOSED',
+                        style: TextStyle(
+                          color: isOpen ? const Color(0xFF047857) : const Color(0xFFB91C1C),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -146,10 +152,11 @@ class AdminDashboardScreen extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 4),
 
           // Switch button
           Transform.scale(
-            scale: 0.85,
+            scale: 0.8,
             child: Switch.adaptive(
               value: isOpen,
               activeTrackColor: const Color(0xFF10B981),
@@ -166,7 +173,7 @@ class AdminDashboardScreen extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
 
           // Admin Notification Bell with live unread badge
           InkWell(
@@ -179,7 +186,7 @@ class AdminDashboardScreen extends StatelessWidget {
             },
             borderRadius: BorderRadius.circular(12),
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
                 color: const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(12),
@@ -193,9 +200,9 @@ class AdminDashboardScreen extends StatelessWidget {
                             '${notifProv.unreadCount}',
                             style: const TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
                           ),
-                          child: const Icon(Icons.notifications_none_rounded, color: Color(0xFF0F172A), size: 20),
+                          child: const Icon(Icons.notifications_none_rounded, color: Color(0xFF0F172A), size: 19),
                         )
-                      : const Icon(Icons.notifications_none_rounded, color: Color(0xFF64748B), size: 20);
+                      : const Icon(Icons.notifications_none_rounded, color: Color(0xFF64748B), size: 19);
                 },
               ),
             ),
