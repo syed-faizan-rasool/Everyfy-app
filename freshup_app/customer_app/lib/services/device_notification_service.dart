@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../main.dart';
 
 /// Service for Real-time System Notifications (Heads-Up Banners on Android Status Bar)
 class DeviceNotificationService {
@@ -91,6 +92,76 @@ class DeviceNotificationService {
       debugPrint('[System Notification] Fired notification ID $id: "$title"');
     } catch (e) {
       debugPrint('[DeviceNotificationService] Error showing notification: $e');
+    }
+  }
+
+  /// Show In-App Floating Popup Toast Banner when the app is actively on screen
+  static void showInAppAlert({
+    required String title,
+    required String body,
+    String? orderNumber,
+    VoidCallback? onTap,
+  }) {
+    try {
+      final messenger = rootScaffoldMessengerKey.currentState;
+      if (messenger != null) {
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.22),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.notifications_active_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13.5,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        body,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF0D6843), // Everyfy Emerald Green
+            duration: const Duration(seconds: 5),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+            elevation: 8,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('[DeviceNotificationService] In-App alert error: $e');
     }
   }
 }

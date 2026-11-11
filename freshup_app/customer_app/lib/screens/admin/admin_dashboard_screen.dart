@@ -28,7 +28,7 @@ class AdminDashboardScreen extends StatelessWidget {
         child: RefreshIndicator(
           color: const Color(0xFF0D5C3A),
           onRefresh: () async {
-            await Future.delayed(const Duration(milliseconds: 400));
+            await admin.fetchLiveFromBackend();
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),

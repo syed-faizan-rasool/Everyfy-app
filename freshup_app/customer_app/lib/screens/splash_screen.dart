@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_role_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/notification_provider.dart';
 import '../utils/app_colors.dart';
 import 'admin/admin_main_navigation_screen.dart';
 import 'auth/unified_auth_screen.dart';
@@ -62,6 +63,20 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
     roleProv.setRole(auth.role);
+
+    // Synchronize NotificationProvider role and user ID immediately on boot
+    final notifProv = context.read<NotificationProvider>();
+    switch (auth.role) {
+      case AppRole.admin:
+        notifProv.setRoleAndUser(role: 'admin');
+        break;
+      case AppRole.rider:
+        notifProv.setRoleAndUser(role: 'rider', userId: auth.userId > 0 ? auth.userId : null);
+        break;
+      case AppRole.customer:
+        notifProv.setRoleAndUser(role: 'customer', userId: auth.userId > 0 ? auth.userId : null);
+        break;
+    }
 
     Widget target;
     if (auth.isLoggedIn) {

@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/delivery_order_model.dart';
 import '../models/order_model.dart';
 import '../services/api_service.dart';
+import '../services/device_notification_service.dart';
 
 class WithdrawalRequest {
   final String id;
@@ -37,8 +39,31 @@ class DeliveryOrderProvider extends ChangeNotifier {
   List<DeliveryOrderModel> _completedOrders = [];
   final List<WithdrawalRequest> _withdrawals = [];
 
+  Timer? _livePollingTimer;
+  final Set<String> _knownAvailableOrderIds = {};
+  bool _initialOrdersLoaded = false;
+
   DeliveryOrderProvider() {
     _loadInitialData();
+  }
+
+  void startLivePolling() {
+    _livePollingTimer?.cancel();
+    syncRiderOrdersSilently();
+    _livePollingTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      syncRiderOrdersSilently();
+    });
+  }
+
+  void stopLivePolling() {
+    _livePollingTimer?.cancel();
+    _livePollingTimer = null;
+  }
+
+  @override
+  void dispose() {
+    stopLivePolling();
+    super.dispose();
   }
 
   void updateRiderAvatar(String url) {
@@ -52,10 +77,49 @@ class DeliveryOrderProvider extends ChangeNotifier {
     _withdrawals.clear();
   }
 
+  /// Silent live sync of assigned & available orders every 4 seconds
+  Future<void> syncRiderOrdersSilently() async {
+    if (!_isOnline) return;
+    try {
+      final remoteOrders = await ApiService.getRiderAvailableOrders();
+      if (_initialOrdersLoaded) {
+        for (var o in remoteOrders) {
+          if (!_knownAvailableOrderIds.contains(o.id)) {
+            _knownAvailableOrderIds.add(o.id);
+            final notifId = (int.tryParse(o.id.replaceAll(RegExp(r'\D'), '')) ?? DateTime.now().millisecondsSinceEpoch) % 100000;
+            DeviceNotificationService.showSystemNotification(
+              id: notifId,
+              title: 'New Delivery Assigned! 🛵',
+              body: 'Order #${o.orderNumber} is ready for pickup. Earning: PKR ${o.earning.toStringAsFixed(0)}',
+              payload: o.orderNumber,
+            );
+            DeviceNotificationService.showInAppAlert(
+              title: 'New Delivery Assigned! 🛵',
+              body: 'Order #${o.orderNumber} - Earning: PKR ${o.earning.toStringAsFixed(0)}',
+              orderNumber: o.orderNumber,
+            );
+          }
+        }
+      } else {
+        for (var o in remoteOrders) {
+          _knownAvailableOrderIds.add(o.id);
+        }
+        _initialOrdersLoaded = true;
+      }
+
+      _availableOrders = remoteOrders;
+      notifyListeners();
+    } catch (_) {}
+  }
+
   /// Refresh available orders from server
   Future<void> fetchAvailableOrders() async {
     try {
       final remoteOrders = await ApiService.getRiderAvailableOrders();
+      for (var o in remoteOrders) {
+        _knownAvailableOrderIds.add(o.id);
+      }
+      _initialOrdersLoaded = true;
       _availableOrders = remoteOrders;
       notifyListeners();
     } catch (_) {}

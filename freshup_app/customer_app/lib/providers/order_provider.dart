@@ -26,6 +26,18 @@ class OrderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Silent sync for real-time customer status tracking without flicker
+  Future<void> fetchOrdersSilently() async {
+    try {
+      final remoteOrders = await ApiService.getOrders();
+      if (remoteOrders.isNotEmpty) {
+        _orders.clear();
+        _orders.addAll(remoteOrders.reversed);
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
   /// Place order via ApiService with fallback
   OrderModel placeOrder({
     required List<CartItemModel> items,

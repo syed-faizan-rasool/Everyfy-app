@@ -2,6 +2,7 @@
 $pageTitle = 'Orders Management';
 $pageHeading = 'Customer Orders';
 require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/../helpers/notification_helper.php';
 
 $pdo = Database::getConnection();
 $message = '';
@@ -16,11 +17,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $riderId = !empty($_POST['delivery_boy_id']) ? (int)$_POST['delivery_boy_id'] : null;
 
         try {
+            // Get current order details
+            $ordStmt = $pdo->prepare("SELECT order_number, user_id, delivery_boy_id, order_status FROM orders WHERE id = ?");
+            $ordStmt->execute([$orderId]);
+            $currentOrder = $ordStmt->fetch();
+            $orderNumber = $currentOrder['order_number'] ?? "ORD-$orderId";
+            $orderUserId = !empty($currentOrder['user_id']) ? (int)$currentOrder['user_id'] : null;
+            $prevRiderId = !empty($currentOrder['delivery_boy_id']) ? (int)$currentOrder['delivery_boy_id'] : null;
+            $prevStatus  = $currentOrder['order_status'] ?? '';
+
             $stmt = $pdo->prepare("UPDATE orders SET order_status = ?, delivery_boy_id = ? WHERE id = ?");
             $stmt->execute([$status, $riderId, $orderId]);
 
             $pdo->prepare("INSERT INTO order_status_history (order_id, status, notes, changed_by) VALUES (?, ?, 'Updated via Admin Panel', 'admin')")
                 ->execute([$orderId, $status]);
+
+            // Notify Rider if assigned or changed
+            if ($riderId && $riderId !== $prevRiderId) {
+                NotificationHelper::create(
+                    $pdo,
+                    'rider',
+                    'New Delivery Assigned! 🛵',
+                    "Order #{$orderNumber} has been assigned to you. Open your active orders to accept and pickup.",
+                    $riderId,
+                    $orderId,
+                    $orderNumber
+                );
+
+                NotificationHelper::create(
+                    $pdo,
+                    'customer',
+                    'Rider Assigned! 🛵',
+                    "A rider has been assigned to your order #{$orderNumber} and is heading to the store.",
+                    $orderUserId,
+                    $orderId,
+                    $orderNumber
+                );
+            }
+
+            // Notify Customer if status changed
+            if ($status && $status !== $prevStatus) {
+                $statusLabels = [
+                    'confirmed' => 'Order Confirmed ✅',
+                    'preparing' => 'Preparing Order 🍲',
+                    'ready'     => 'Order Ready for Pickup 📦',
+                    'on_the_way'=> 'Order Out for Delivery 🛵',
+                    'delivered' => 'Order Delivered 🎉',
+                    'cancelled' => 'Order Cancelled ❌',
+                ];
+                $label = $statusLabels[$status] ?? "Order status: $status";
+
+                NotificationHelper::create(
+                    $pdo,
+                    'customer',
+                    $label,
+                    "Your order #{$orderNumber} status is now: " . ucfirst(str_replace('_', ' ', $status)),
+                    $orderUserId,
+                    $orderId,
+                    $orderNumber
+                );
+            }
 
             $message = "Order #{$orderId} updated successfully!";
         } catch (PDOException $e) {

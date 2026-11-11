@@ -4,6 +4,7 @@ import '../providers/admin_provider.dart';
 import '../providers/app_role_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/delivery_order_provider.dart';
+import '../providers/notification_provider.dart';
 import '../utils/app_colors.dart';
 import '../widgets/animated_widgets.dart';
 import 'admin/admin_login_screen.dart';
@@ -17,8 +18,13 @@ class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
 
   void _selectCustomer(BuildContext context) {
+    final auth = context.read<AuthProvider>();
     context.read<AppRoleProvider>().setRole(AppRole.customer);
-    final isCustomerLoggedIn = context.read<AuthProvider>().isLoggedIn;
+    context.read<NotificationProvider>().setRoleAndUser(
+      role: 'customer',
+      userId: auth.userId > 0 ? auth.userId : null,
+    );
+    final isCustomerLoggedIn = auth.isLoggedIn;
 
     Navigator.push(
       context,
@@ -29,7 +35,13 @@ class RoleSelectionScreen extends StatelessWidget {
   }
 
   void _selectRider(BuildContext context) {
+    final auth = context.read<AuthProvider>();
     context.read<AppRoleProvider>().setRole(AppRole.rider);
+    context.read<NotificationProvider>().setRoleAndUser(
+      role: 'rider',
+      userId: auth.userId > 0 ? auth.userId : null,
+    );
+    context.read<DeliveryOrderProvider>().startLivePolling();
     final isRiderLoggedIn = context.read<DeliveryOrderProvider>().isLoggedIn;
 
     Navigator.push(
@@ -42,6 +54,8 @@ class RoleSelectionScreen extends StatelessWidget {
 
   void _selectAdmin(BuildContext context) {
     context.read<AppRoleProvider>().setRole(AppRole.admin);
+    context.read<NotificationProvider>().setRoleAndUser(role: 'admin');
+    context.read<AdminProvider>().startLivePolling();
     final isAdminLoggedIn = context.read<AdminProvider>().isLoggedIn;
 
     Navigator.push(

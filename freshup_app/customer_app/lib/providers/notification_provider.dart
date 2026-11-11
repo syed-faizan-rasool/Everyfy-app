@@ -10,6 +10,7 @@ class NotificationProvider extends ChangeNotifier {
   bool _isLoading = false;
   Timer? _pollingTimer;
   final Set<int> _shownNotificationIds = {};
+  bool _hasCompletedInitialFetch = false;
 
   String _currentRole = 'customer';
   int? _currentUserId;
@@ -18,10 +19,17 @@ class NotificationProvider extends ChangeNotifier {
   int get unreadCount => _unreadCount;
   bool get isLoading => _isLoading;
   bool get hasUnread => _unreadCount > 0;
+  String get currentRole => _currentRole;
+  int? get currentUserId => _currentUserId;
 
   NotificationProvider() {
-    // Start periodic polling every 12 seconds to capture live events across 3 sides
-    _pollingTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+    startPolling();
+  }
+
+  void startPolling() {
+    _pollingTimer?.cancel();
+    // Fast 4-second polling for real-time live events across Customer, Admin, and Rider
+    _pollingTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       fetchNotifications(silent: true);
     });
   }
@@ -36,7 +44,11 @@ class NotificationProvider extends ChangeNotifier {
     if (_currentRole != role || _currentUserId != userId) {
       _currentRole = role;
       _currentUserId = userId;
-      fetchNotifications();
+      _hasCompletedInitialFetch = false; // Reset so initial load for this role is recorded cleanly
+      _notifications = [];
+      _unreadCount = 0;
+      notifyListeners();
+      fetchNotifications(silent: true);
     }
   }
 
@@ -52,6 +64,11 @@ class NotificationProvider extends ChangeNotifier {
       title: title,
       body: body,
       payload: payload,
+    );
+    DeviceNotificationService.showInAppAlert(
+      title: title,
+      body: body,
+      orderNumber: payload,
     );
   }
 
@@ -71,8 +88,8 @@ class NotificationProvider extends ChangeNotifier {
         final incoming = (res['notifications'] as List<NotificationModel>?) ?? [];
         _unreadCount = (res['unread_count'] as int?) ?? 0;
 
-        // Fire real Android system notifications for newly arrived items
-        if (_notifications.isNotEmpty) {
+        if (_hasCompletedInitialFetch) {
+          // Real-time incoming notifications: trigger both system pop-up and in-app alert banner
           for (var notif in incoming) {
             if (!notif.isRead && !_shownNotificationIds.contains(notif.id)) {
               DeviceNotificationService.showSystemNotification(
@@ -81,15 +98,22 @@ class NotificationProvider extends ChangeNotifier {
                 body: notif.message,
                 payload: notif.orderNumber,
               );
+              DeviceNotificationService.showInAppAlert(
+                title: notif.title,
+                body: notif.message,
+                orderNumber: notif.orderNumber,
+              );
               _shownNotificationIds.add(notif.id);
             }
           }
         } else {
-          // On initial load, record IDs so user isn't spammed with old history
+          // On first fetch for this role, register existing notification IDs so user isn't spammed
           for (var notif in incoming) {
             _shownNotificationIds.add(notif.id);
           }
+          _hasCompletedInitialFetch = true;
         }
+
         _notifications = incoming;
       }
     } catch (_) {}
@@ -125,4 +149,5 @@ class NotificationProvider extends ChangeNotifier {
     );
   }
 }
+
 

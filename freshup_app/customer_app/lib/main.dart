@@ -13,6 +13,9 @@ import 'services/device_notification_service.dart';
 import 'services/meta_analytics_service.dart';
 import 'utils/app_theme.dart';
 
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Initialize Real-time System Notification Service (Heads-Up Banner Channels)
@@ -39,6 +42,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: MaterialApp(
+        navigatorKey: rootNavigatorKey,
+        scaffoldMessengerKey: rootScaffoldMessengerKey,
         title: 'Everyfy',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),

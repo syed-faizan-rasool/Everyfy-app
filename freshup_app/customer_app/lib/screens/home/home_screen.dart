@@ -29,6 +29,18 @@ class _HomeScreenState extends State<HomeScreen> {
   int _navIndex = 1; // Default to Grocery (Shop)
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = context.read<AuthProvider>();
+      context.read<NotificationProvider>().setRoleAndUser(
+        role: 'customer',
+        userId: auth.userId > 0 ? auth.userId : null,
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final screens = [
       _HomeTab(

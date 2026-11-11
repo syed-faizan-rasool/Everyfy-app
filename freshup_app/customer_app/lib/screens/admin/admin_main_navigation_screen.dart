@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/order_model.dart';
 import '../../providers/admin_provider.dart';
+import '../../providers/notification_provider.dart';
 import 'admin_dashboard_screen.dart';
 import 'admin_fleet_screen.dart';
 import 'admin_inventory_screen.dart';
@@ -24,6 +25,10 @@ class _AdminMainNavigationScreenState extends State<AdminMainNavigationScreen> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<NotificationProvider>().setRoleAndUser(role: 'admin');
+      context.read<AdminProvider>().startLivePolling();
+    });
   }
 
   void _switchTab(int index) {

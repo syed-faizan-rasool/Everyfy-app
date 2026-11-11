@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/admin_model.dart';
 import '../models/category_model.dart';
 import '../models/order_model.dart';
 import '../models/product_model.dart';
 import '../services/api_service.dart';
+import '../services/device_notification_service.dart';
 
 class AdminProvider extends ChangeNotifier {
   bool _isLoggedIn = false;
@@ -23,6 +25,10 @@ class AdminProvider extends ChangeNotifier {
   List<RiderFleetMemberModel> _fleet = [];
   List<CouponModel> _coupons = [];
 
+  Timer? _livePollingTimer;
+  final Set<String> _knownOrderIds = {};
+  bool _initialOrdersLoaded = false;
+
   AdminProvider() {
     _initData();
   }
@@ -34,6 +40,71 @@ class AdminProvider extends ChangeNotifier {
     _orders = [];
     _coupons = [];
     fetchLiveFromBackend();
+  }
+
+  void startLivePolling() {
+    _livePollingTimer?.cancel();
+    syncOrdersAndFleetSilently();
+    _livePollingTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      syncOrdersAndFleetSilently();
+    });
+  }
+
+  void stopLivePolling() {
+    _livePollingTimer?.cancel();
+    _livePollingTimer = null;
+  }
+
+  @override
+  void dispose() {
+    stopLivePolling();
+    super.dispose();
+  }
+
+  /// Silent background sync every 4 seconds for real-time live admin management
+  Future<void> syncOrdersAndFleetSilently() async {
+    try {
+      final remoteOrders = await ApiService.getAdminOrdersList();
+      final remoteFleet = await ApiService.getAdminRidersList();
+
+      if (remoteOrders.isNotEmpty) {
+        if (_initialOrdersLoaded) {
+          // Detect brand new incoming orders
+          for (var o in remoteOrders) {
+            if (!_knownOrderIds.contains(o.id)) {
+              _knownOrderIds.add(o.id);
+              if (o.status == OrderStatus.placed) {
+                final notifId = (int.tryParse(o.id.replaceAll(RegExp(r'\D'), '')) ?? DateTime.now().millisecondsSinceEpoch) % 100000;
+                DeviceNotificationService.showSystemNotification(
+                  id: notifId,
+                  title: 'New Order Received! 🛒',
+                  body: 'Order #${o.orderNumber} placed by ${o.customerName} (PKR ${o.total.toStringAsFixed(0)})',
+                  payload: o.orderNumber,
+                );
+                DeviceNotificationService.showInAppAlert(
+                  title: 'New Order Received! 🛒',
+                  body: 'Order #${o.orderNumber} - PKR ${o.total.toStringAsFixed(0)} (${o.customerName})',
+                  orderNumber: o.orderNumber,
+                );
+              }
+            }
+          }
+        } else {
+          for (var o in remoteOrders) {
+            _knownOrderIds.add(o.id);
+          }
+          _initialOrdersLoaded = true;
+        }
+
+        _orders = List<AdminOrderModel>.from(remoteOrders);
+      }
+
+      if (remoteFleet.isNotEmpty) {
+        _fleet = List<RiderFleetMemberModel>.from(remoteFleet);
+      }
+
+      notifyListeners();
+    } catch (_) {}
   }
 
   // Getters
@@ -288,6 +359,10 @@ class AdminProvider extends ChangeNotifier {
       _products = List<ProductModel>.from(pList);
       _categories = List<CategoryModel>.from(cList)..sort(CategoryModel.compareByPreferredOrder);
       _orders = List<AdminOrderModel>.from(oList);
+      for (var o in _orders) {
+        _knownOrderIds.add(o.id);
+      }
+      _initialOrdersLoaded = true;
       _fleet = List<RiderFleetMemberModel>.from(rList);
       notifyListeners();
     } catch (_) {}

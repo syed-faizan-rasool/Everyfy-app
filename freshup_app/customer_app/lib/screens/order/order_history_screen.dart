@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -16,6 +17,8 @@ class OrderHistoryScreen extends StatefulWidget {
 }
 
 class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
+  Timer? _pollTimer;
+
   @override
   void initState() {
     super.initState();
@@ -24,6 +27,18 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         context.read<OrderProvider>().fetchOrders();
       }
     });
+    // Live real-time polling every 4 seconds to observe status changes without manual refresh
+    _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (mounted) {
+        context.read<OrderProvider>().fetchOrdersSilently();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   Color _getStatusColor(OrderStatus status) {

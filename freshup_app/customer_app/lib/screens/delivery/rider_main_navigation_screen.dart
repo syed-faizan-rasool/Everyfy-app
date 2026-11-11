@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/delivery_order_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../utils/app_colors.dart';
 import 'home_screen.dart';
 import 'order_history_screen.dart';
@@ -14,6 +18,19 @@ class RiderMainNavigationScreen extends StatefulWidget {
 
 class _RiderMainNavigationScreenState extends State<RiderMainNavigationScreen> {
   int _navIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = context.read<AuthProvider>();
+      context.read<NotificationProvider>().setRoleAndUser(
+        role: 'rider',
+        userId: auth.userId > 0 ? auth.userId : null,
+      );
+      context.read<DeliveryOrderProvider>().startLivePolling();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
