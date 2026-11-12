@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../utils/app_colors.dart';
 import '../address/address_screen.dart';
@@ -192,6 +193,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
 
     cart.clearCart();
+    context.read<NotificationProvider>().fetchNotifications(silent: true);
 
     // Meta Tracking Event: Purchase (Order Value in PKR)
     MetaAnalyticsService.logPurchase(

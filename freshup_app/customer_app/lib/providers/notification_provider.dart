@@ -8,6 +8,7 @@ class NotificationProvider extends ChangeNotifier {
   List<NotificationModel> _notifications = [];
   int _unreadCount = 0;
   bool _isLoading = false;
+  bool _isFetching = false;
   Timer? _pollingTimer;
   final Set<int> _shownNotificationIds = {};
   bool _hasCompletedInitialFetch = false;
@@ -28,8 +29,8 @@ class NotificationProvider extends ChangeNotifier {
 
   void startPolling() {
     _pollingTimer?.cancel();
-    // Fast 4-second polling for real-time live events across Customer, Admin, and Rider
-    _pollingTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+    // Fast 3-second rapid polling for real-time live events across Customer, Admin, and Rider
+    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       fetchNotifications(silent: true);
     });
   }
@@ -44,7 +45,6 @@ class NotificationProvider extends ChangeNotifier {
     if (_currentRole != role || _currentUserId != userId) {
       _currentRole = role;
       _currentUserId = userId;
-      _hasCompletedInitialFetch = false; // Reset so initial load for this role is recorded cleanly
       _notifications = [];
       _unreadCount = 0;
       notifyListeners();
@@ -73,6 +73,9 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   Future<void> fetchNotifications({bool silent = false}) async {
+    if (_isFetching) return;
+    _isFetching = true;
+
     if (!silent) {
       _isLoading = true;
       notifyListeners();
@@ -89,37 +92,67 @@ class NotificationProvider extends ChangeNotifier {
         _unreadCount = (res['unread_count'] as int?) ?? 0;
 
         if (_hasCompletedInitialFetch) {
-          // Real-time incoming notifications: trigger both system pop-up and in-app alert banner
-          for (var notif in incoming) {
-            if (!notif.isRead && !_shownNotificationIds.contains(notif.id)) {
-              DeviceNotificationService.showSystemNotification(
-                id: notif.id,
-                title: notif.title,
-                body: notif.message,
-                payload: notif.orderNumber,
-              );
-              DeviceNotificationService.showInAppAlert(
-                title: notif.title,
-                body: notif.message,
-                orderNumber: notif.orderNumber,
-              );
-              _shownNotificationIds.add(notif.id);
+          // Process unread notifications in chronological order (oldest to newest)
+          final newUnread = incoming.reversed
+              .where((n) => !n.isRead && !_shownNotificationIds.contains(n.id))
+              .toList();
+
+          for (var notif in newUnread) {
+            _shownNotificationIds.add(notif.id);
+            await DeviceNotificationService.showSystemNotification(
+              id: notif.id,
+              title: notif.title,
+              body: notif.message,
+              payload: notif.orderNumber,
+            );
+            DeviceNotificationService.showInAppAlert(
+              title: notif.title,
+              body: notif.message,
+              orderNumber: notif.orderNumber,
+            );
+            if (newUnread.length > 1) {
+              await Future.delayed(const Duration(milliseconds: 200));
             }
           }
         } else {
-          // On first fetch for this role, register existing notification IDs so user isn't spammed
+          // On cold start: show unread notifications created in the last 3 minutes
+          final now = DateTime.now();
+          final freshUnread = incoming.reversed.where((n) =>
+              !n.isRead &&
+              now.difference(n.createdAt).inMinutes < 3 &&
+              !_shownNotificationIds.contains(n.id)).toList();
+
           for (var notif in incoming) {
             _shownNotificationIds.add(notif.id);
           }
+
+          for (var notif in freshUnread) {
+            await DeviceNotificationService.showSystemNotification(
+              id: notif.id,
+              title: notif.title,
+              body: notif.message,
+              payload: notif.orderNumber,
+            );
+            DeviceNotificationService.showInAppAlert(
+              title: notif.title,
+              body: notif.message,
+              orderNumber: notif.orderNumber,
+            );
+            if (freshUnread.length > 1) {
+              await Future.delayed(const Duration(milliseconds: 200));
+            }
+          }
+
           _hasCompletedInitialFetch = true;
         }
 
         _notifications = incoming;
       }
-    } catch (_) {}
-
-    _isLoading = false;
-    notifyListeners();
+    } catch (_) {} finally {
+      _isFetching = false;
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> markAsRead(int notificationId) async {
